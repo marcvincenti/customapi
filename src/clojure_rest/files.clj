@@ -8,12 +8,6 @@
   {:access-key "AKIAIKZWOA4I5Y43GDOA"
    :secret-key "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"
    :endpoint   "eu-west-1"})
-   
-(defn get-pic
-  "Downloads a picture from S3. Returns clj-http response"
-  [picture]
-  (try (:object-content (get-object cred "wonespictures" picture))
-    (catch Exception e nil)))
   
 (defn post-pic
   "Uploads a picture to S3, return the new filename"

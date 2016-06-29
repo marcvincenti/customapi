@@ -10,6 +10,7 @@
                  [mysql/mysql-connector-java "6.0.2"]
                  [clojure.jdbc/clojure.jdbc-c3p0 "0.3.1"]
                  [clj-http "3.0.1"]
+                 [crypto-random "1.2.0"]
                  [amazonica "0.3.57"]]
   :plugins [[lein-ring "0.9.7"]]
   :ring {:init clojure-rest.server/init!

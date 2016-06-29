@@ -23,15 +23,17 @@
           :subname "//test.ctcyur2o6hny.eu-west-1.rds.amazonaws.com:3306/testting"
           }})
 
-(defn ^:private create-db [profile]
+(defn ^:private create-user-db [profile]
   (if (empty? (jdbc/query profile ["SHOW TABLES LIKE 'users'"]))
     (jdbc/db-do-prepared profile
       (ddl/create-table :users
         [:id "BIGINT" "NOT NULL" "AUTO_INCREMENT" "PRIMARY KEY"]
-        [:email "varchar(32)" "NOT NULL"]
+        [:email "varchar(32)" "UNIQUE" "NOT NULL"]
         [:username "varchar(32)" "NOT NULL"]
         [:gender "ENUM('male','female')"]
-        [:profile_picture "VARCHAR(2083)"])))
+        [:picture "VARCHAR(2083)"]
+        [:salt "BINARY(64)"]
+        [:password "VARCHAR(40)"])))
   (if (empty? (jdbc/query profile ["SHOW TABLES LIKE 'roles'"]))
     (do
       (jdbc/db-do-prepared profile
@@ -64,5 +66,5 @@
                :subprotocol "mysql"})
        pool/make-datasource-spec
        (reset! db)
-       create-db))
+       create-user-db))
 

@@ -1,10 +1,12 @@
 (ns clojure-rest.utils
-	(:require [clj-time.core :as time]
-            [clj-time.local :as l]
+	(:require [clj-time.local :as l]
             [clojure.java.io :only [as-file input-stream output-stream] :as io]
-            [ring.util.response :refer [response]])
+            [crypto.random :as crypto])
   (import javax.imageio.ImageIO
-          java.awt.image.BufferedImage))
+          java.awt.image.BufferedImage
+          java.security.SecureRandom
+          javax.crypto.SecretKeyFactory
+          javax.crypto.spec.PBEKeySpec))
 
 (defn str->int
   "Converts string to int. Throws an exception if s cannot be parsed as an int"
@@ -27,12 +29,6 @@
   []
   (l/format-local-time (l/local-now) :basic-date-time))
 
-(defn to-date
-  "take an ISO 8601 compliant date and return a date object"
-  [date]
-  ;TODO, add support for timezone in BDD and set date to :basic-date-time
-  (l/format-local-time date :date-hour-minute-second-ms))
-
 (defn generate-token
   "Return a new token access"
   []
@@ -41,7 +37,7 @@
 (defn generate-salt
   "Return a new random salt"
   []
-  (+ 1000000 (rand-int 9000000)))
+  (crypto/bytes 64))
   
 (defn make-error
   "Make an error response"
@@ -62,3 +58,11 @@
       (.drawImage g img 0 0 width height nil)
       (.dispose g)
       (ImageIO/write simg "png" out-stream))))
+      
+(defn pbkdf2
+  "Get a hash for the given string and optional salt"
+  [x salt]
+  (let [k (PBEKeySpec. (.toCharArray x) (.getBytes salt) 1000 192)
+        f (SecretKeyFactory/getInstance "PBKDF2WithHmacSHA1")]
+    (format "%x"
+      (java.math.BigInteger. (.getEncoded (.generateSecret f k))))))
