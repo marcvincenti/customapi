@@ -1,12 +1,22 @@
 (ns clojure-rest.users
   (:require [clojure.java.jdbc :as jdbc]
             [clojure-rest.utils :as utils]
+            [clojure-rest.db-utils :as db-utils]
             [clojure-rest.db :as db]
             [clojure-rest.valid :as valid]
             [clj-http.client :as client]
             [ring.util.response :refer [response]]))
    
-
+(defn ^:private return-public-profile
+  "return a public user profile"
+  [user]
+    (response (select-keys user [:username :picture :gender])))
+    
+(defn ^:private return-private-profile
+  "return a private user profile"
+  [user]
+    (response (select-keys user [:username :picture :gender :email :access_token])))
+    
 (defn ^:private email-in-db?
   "return true if the email is already present in db"
   [email]
@@ -24,8 +34,9 @@
          (string? (:picture user)), 
          (or (nil? (:gender user)) (valid/gender? (:gender user)))]}
   (let [{:keys [name email picture gender password]} user
-        salt (utils/generate-salt) 
-        access_token (utils/generate-token)]
+        salt (db-utils/generate-salt) 
+        hashedpassword (db-utils/pbkdf2 password salt)
+        access_token (db-utils/generate-token)]
     (try 
       (jdbc/insert! @db/db :users 
         {:email email 
@@ -33,9 +44,8 @@
          :picture picture 
          :gender gender 
          :salt salt
-         :password password})
+         :password hashedpassword})
       (catch Exception e (utils/make-error 500 "Unable to insert user in database")))))
-
 
 (defn update!
   "Update a user in database"
@@ -44,16 +54,15 @@
          (or (nil? (:name user)) (string? (:name user))), 
          (or (nil? (:picture user)) (string? (:picture user))), 
          (or (nil? (:gender user)) (valid/gender? (:gender user)))]}
-  (let [{:keys [name email picture gender password]} user
-        access_token (utils/generate-token)]
+  (let [{:keys [name email picture gender]} user
+        access_token (db-utils/generate-token)]
     (try 
       (jdbc/update! @db/db :users 
         ;we avoid setting variables to null with this reduction
         (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
          {:username name
           :picture picture
-          :gender gender
-          :password password}) ["email = ?" email])
+          :gender gender}) ["email = ?" email])
       (catch Exception e (utils/make-error 500 "Unable to update user in database")))))
 
 (defn ^:private auth-connect

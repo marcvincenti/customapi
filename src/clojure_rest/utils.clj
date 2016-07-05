@@ -1,12 +1,8 @@
 (ns clojure-rest.utils
 	(:require [clj-time.local :as l]
-            [clojure.java.io :only [as-file input-stream output-stream] :as io]
-            [crypto.random :as crypto])
+            [clojure.java.io :only [as-file input-stream output-stream] :as io])
   (import javax.imageio.ImageIO
-          java.awt.image.BufferedImage
-          java.security.SecureRandom
-          javax.crypto.SecretKeyFactory
-          javax.crypto.spec.PBEKeySpec))
+          java.awt.image.BufferedImage))
 
 (defn str->int
   "Converts string to int. Throws an exception if s cannot be parsed as an int"
@@ -28,16 +24,6 @@
   "Returns current ISO 8601 compliant date."
   []
   (l/format-local-time (l/local-now) :basic-date-time))
-
-(defn generate-token
-  "Return a new token access"
-  []
-  (str (java.util.UUID/randomUUID)))
-  
-(defn generate-salt
-  "Return a new random salt"
-  []
-  (crypto/bytes 64))
   
 (defn make-error
   "Make an error response"
@@ -58,11 +44,3 @@
       (.drawImage g img 0 0 width height nil)
       (.dispose g)
       (ImageIO/write simg "png" out-stream))))
-      
-(defn pbkdf2
-  "Get a hash for the given string and optional salt"
-  [x salt]
-  (let [k (PBEKeySpec. (.toCharArray x) (.getBytes salt) 1000 192)
-        f (SecretKeyFactory/getInstance "PBKDF2WithHmacSHA1")]
-    (format "%x"
-      (java.math.BigInteger. (.getEncoded (.generateSecret f k))))))
