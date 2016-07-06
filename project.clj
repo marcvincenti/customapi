@@ -7,7 +7,7 @@
                  [ring/ring-json "0.4.0"]
                  [org.clojure/java.jdbc "0.6.0"]
                  [java-jdbc/dsl "0.1.3"]
-                 [mysql/mysql-connector-java "6.0.2"]
+                 [org.postgresql/postgresql "9.4-1201-jdbc41"]
                  [clojure.jdbc/clojure.jdbc-c3p0 "0.3.1"]
                  [clj-http "3.0.1"]
                  [crypto-random "1.2.0"]

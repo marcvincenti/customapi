@@ -20,50 +20,55 @@
           }
    :test {:user "root"
           :password "toortoor"
-          :subname "//test.ctcyur2o6hny.eu-west-1.rds.amazonaws.com:3306/testting"
+          :subname "//another.ctcyur2o6hny.eu-west-1.rds.amazonaws.com:5432/postgres"
           }})
+      
+(defn table-exist?
+  "Check if the schema from the database contains the table"
+  [table-name profile]
+  (= "t" (:exists (jdbc/query profile
+          ["SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = ?)" table-name]))))
 
 (defn ^:private create-user-db [profile]
-  (if (empty? (jdbc/query profile ["SHOW TABLES LIKE 'users'"]))
+  (if-not (table-exist? "users" profile)
+    ;(jdbc/query profile ["DROP TYPE gender; CREATE TYPE gender AS ENUM ('male', 'female')"])
     (jdbc/db-do-prepared profile
       (ddl/create-table :users
-        [:id "BIGINT" "NOT NULL" "AUTO_INCREMENT" "PRIMARY KEY"]
+        [:id "SERIAL" "PRIMARY KEY"]
         [:email "varchar(32)" "UNIQUE" "NOT NULL"]
         [:username "varchar(32)" "NOT NULL"]
-        [:gender "ENUM('male','female')"]
+        [:gender "gender"]
         [:picture "VARCHAR(2083)"]
-        [:salt "BINARY(64)"]
+        [:salt "bytea"]
         [:password "VARCHAR(40)"])))
-  (if (empty? (jdbc/query profile ["SHOW TABLES LIKE 'roles'"]))
+  (if-not (table-exist? "roles" profile)
     (do
       (jdbc/db-do-prepared profile
         (ddl/create-table :roles
-          [:id "MEDIUMINT" "NOT NULL" "AUTO_INCREMENT" "PRIMARY KEY"]
+          [:id "SERIAL" "PRIMARY KEY"]
           [:name "varchar(16)" "NOT NULL" "UNIQUE"]))
       (jdbc/insert! profile :roles {:name "verified"})
       (jdbc/insert! profile :roles {:name "admin"})))
-  (if (empty? (jdbc/query profile ["SHOW TABLES LIKE 'user_role'"]))
+  (if-not (table-exist? "user_role" profile)
     (jdbc/db-do-prepared profile
       (ddl/create-table :user_role
-        [:user "BIGINT" "NOT NULL"]
-        [:role "MEDIUMINT" "NOT NULL"]
-        ["PRIMARY KEY (user, role)"]
-        ["FOREIGN KEY (user) REFERENCES users(id)" "ON DELETE CASCADE"]
-        ["FOREIGN KEY (role) REFERENCES roles(id)" "ON DELETE CASCADE"])))
-  (if (empty? (jdbc/query profile ["SHOW TABLES LIKE 'tokens'"]))
+        [:user "integer REFERENCES users(id)"]
+        [:role "integer REFERENCES roles(id)"]
+        ["PRIMARY KEY (user, role)"])))
+  (if-not (table-exist? "tokens" profile)
     (jdbc/db-do-prepared profile
       (ddl/create-table :tokens
-        [:user "BIGINT" "NOT NULL" "PRIMARY KEY"]
+        [:user "integer REFERENCES users"]
         [:access_token "varchar(36)" "NOT NULL" "UNIQUE"]
-        ["FOREIGN KEY (user) REFERENCES users(id)" "ON DELETE CASCADE"]))))
+        [:expire "int(10)" "NOT NULL" "DEFAULT UNIX_TIMESTAMP()+(24*60*60)" "ON UPDATE UNIX_TIMESTAMP()+(24*60*60)"]))))
             
             
 (defn init-db! [profile]
   {:pre [(get allowed-profiles profile)]}
   (->> profile
        (get db-specs)
-       (merge {:classname "com.mysql.jdbc.Driver"
-               :subprotocol "mysql"})
+       (merge {:classname "org.postgresql.Driver"
+               :subprotocol "postgresql"})
        pool/make-datasource-spec
        (reset! db)
        create-user-db))

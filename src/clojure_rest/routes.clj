@@ -1,7 +1,8 @@
 (ns clojure-rest.routes
   (:require [compojure.core :refer :all]
             [compojure.route :refer [not-found]]
-            [clojure-rest.users :as users]))
+            [clojure-rest.users :as users]
+            [clojure-rest.db :as db]))
 
 (defn ^:private default-page []
   {:status 200 :body "Hello you ;)"})
