@@ -94,5 +94,5 @@
                 {:query-params {"fields" "name,email,gender,last_name,first_name,picture"
                  "access_token" token} :as :json-strict})
           picture (:url (:data (:picture (:body req))))]
-      (auth-connect (assoc (:body req) :picture picture))))
-    (catch Exception e (utils/make-error 409 "Bad Facebook token")))
+      (auth-connect (assoc (:body req) :picture picture)))
+    (catch Exception e (utils/make-error 409 "Bad Facebook token"))))

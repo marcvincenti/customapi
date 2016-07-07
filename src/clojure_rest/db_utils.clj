@@ -32,3 +32,12 @@
       (if (zero? (first result))
         (jdbc/insert! t-con table row)
         result))))
+        
+      
+(defn table-exist?
+  "Check if the schema from the database contains the table"
+  [table-name db-specs]
+  (-> (jdbc/query db-specs
+          ["SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = ?)" table-name])
+      first
+      :exists))

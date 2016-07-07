@@ -1,6 +1,7 @@
 (ns clojure-rest.db
   (:import com.mchange.v2.c3p0.ComboPooledDataSource)
   (:require [clojure.java.jdbc :as jdbc]
+            [clojure-rest.db-utils :refer [table-exist?]]
             [jdbc.pool.c3p0 :as pool]
             [java-jdbc.ddl :as ddl]))
 
@@ -22,14 +23,6 @@
           :password "toortoor"
           :subname "//another.ctcyur2o6hny.eu-west-1.rds.amazonaws.com:5432/postgres"
           }})
-      
-(defn table-exist?
-  "Check if the schema from the database contains the table"
-  [table-name profile]
-  (-> (jdbc/query profile
-          ["SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = ?)" table-name])
-      first
-      :exists))
 
 (defn ^:private create-user-db [profile]
   (if-not (table-exist? "users" profile)
