@@ -33,17 +33,15 @@
 
 (defn ^:private create-user-db [profile]
   (if-not (table-exist? "users" profile)
-    (do
-      ;(jdbc/query profile ["DROP TYPE IF EXISTS gender; CREATE TYPE gender AS ENUM ('male', 'female'); SELECT 1 as r"])
-      (jdbc/db-do-prepared profile
-        (ddl/create-table :users
-          [:id :serial "PRIMARY KEY"]
-          [:email "varchar(32)" "UNIQUE" "NOT NULL"]
-          [:username "varchar(32)" "NOT NULL"]
-          [:gender "gender"]
-          [:picture "VARCHAR(2083)"]
-          [:salt "bytea"]
-          [:password "VARCHAR(40)"]))))
+    (jdbc/db-do-prepared profile
+      (ddl/create-table :users
+        [:id :serial "PRIMARY KEY"]
+        [:email "varchar(32)" "UNIQUE" "NOT NULL"]
+        [:username "varchar(32)" "NOT NULL"]
+        [:gender "varchar(6)"]
+        [:picture "VARCHAR(2083)"]
+        [:salt "bytea"]
+        [:password "VARCHAR(40)"])))
   (if-not (table-exist? "roles" profile)
     (do
       (jdbc/db-do-prepared profile
