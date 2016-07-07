@@ -40,7 +40,7 @@
           [:id :serial "PRIMARY KEY"]
           [:email "varchar(32)" "UNIQUE" "NOT NULL"]
           [:username "varchar(32)" "NOT NULL"]
-          [:gender "TYPE gender AS ENUM ('male', 'female')"]
+          [:gender "gender"]
           [:picture "VARCHAR(2083)"]
           [:salt "bytea"]
           [:password "VARCHAR(40)"]))))
@@ -55,16 +55,15 @@
   (if-not (table-exist? "user_role" profile)
     (jdbc/db-do-prepared profile
       (ddl/create-table :user_role
-        [:user :serial "REFERENCES users(id)"]
-        [:role :serial "REFERENCES roles(id)"]
-        ["PRIMARY KEY (user, role)"])))
+        [:rel_user "integer" "references users(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
+        [:rel_role "integer" "references roles(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
+        ["PRIMARY KEY (rel_user, rel_role)"])))
   (if-not (table-exist? "tokens" profile)
     (jdbc/db-do-prepared profile
       (ddl/create-table :tokens
-        [:user :serial "references users(id)"]
-        [:access_token "varchar(36)" "NOT NULL" "UNIQUE"]
-        [:expire "int(10)" "NOT NULL" "DEFAULT UNIX_TIMESTAMP()+(24*60*60)" "ON UPDATE UNIX_TIMESTAMP()+(24*60*60)"]))))
-            
+        [:rel_user "integer" "UNIQUE" "references users(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
+        [:access_token "varchar(36)" "PRIMARY KEY"]
+        [:expire "bigint" "NOT NULL"]))))
             
 (defn init-db! [profile]
   {:pre [(get allowed-profiles profile)]}
@@ -75,4 +74,3 @@
        pool/make-datasource-spec
        (reset! db)
        create-user-db))
-
