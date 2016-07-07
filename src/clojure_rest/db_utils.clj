@@ -18,10 +18,11 @@
 (defn pbkdf2
   "Get a hash for the given string and optional salt"
   [x salt]
-  (let [k (PBEKeySpec. (.toCharArray x) (.getBytes salt) 1000 192)
-        f (SecretKeyFactory/getInstance "PBKDF2WithHmacSHA1")]
-    (format "%x"
-      (java.math.BigInteger. (.getEncoded (.generateSecret f k))))))
+  (if (nil? x) nil
+    (let [k (PBEKeySpec. (.toCharArray x) (.getBytes salt) 1000 192)
+          f (SecretKeyFactory/getInstance "PBKDF2WithHmacSHA1")]
+      (format "%x"
+        (java.math.BigInteger. (.getEncoded (.generateSecret f k)))))))
       
 (defn update-or-insert!
   "Updates columns or inserts a new row in the specified table"
