@@ -38,7 +38,7 @@
         salt (db-utils/generate-salt) 
         hashedpassword (db-utils/pbkdf2 password salt)
         access_token (db-utils/generate-token)]
-    ;(try 
+    (try 
       (-> (jdbc/insert! @db/db :users 
             {:email email 
              :username username 
@@ -48,8 +48,7 @@
              :password hashedpassword})
             first
           return-private-profile)
-      ;(catch Exception e (utils/make-error 500 "Unable to insert user in database")))
-      ))
+      (catch Exception e (utils/make-error 500 "Unable to insert user in database")))))
 
 (defn update!
   "Update a user in database"
@@ -74,7 +73,7 @@
   "Register the user in database or update his profile"
   [user]
     (let [formatted-user (rename-keys user {:name :username})]
-      (if (email-in-db? (:email user))
+      (if (email-in-db? (:email formatted-user))
         (update! formatted-user)
         (register! formatted-user))))
 
@@ -90,10 +89,10 @@
 (defn auth-facebook
   "Authenticate a user with facebook access token"
   [token]
-  ;(try
+  (try
     (let [req (client/get "https://graph.facebook.com/v2.6/me" 
                 {:query-params {"fields" "name,email,gender,last_name,first_name,picture"
                  "access_token" token} :as :json-strict})
           picture (:url (:data (:picture (:body req))))]
       (auth-connect (assoc (:body req) :picture picture))))
-    ;(catch Exception e (utils/make-error 409 "Bad Facebook token"))))
+    (catch Exception e (utils/make-error 409 "Bad Facebook token")))
