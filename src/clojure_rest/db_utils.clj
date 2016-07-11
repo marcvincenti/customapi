@@ -5,10 +5,13 @@
           javax.crypto.SecretKeyFactory
           javax.crypto.spec.PBEKeySpec))
 
-(defn generate-token
-  "Return a new token access"
+(defn generate-token-map
+  "Return a new token access and an expiration unix time in a map"
   []
-  (str (java.util.UUID/randomUUID)))
+  {:access_token (str (java.util.UUID/randomUUID))
+   :expire (+ 
+              (quot (System/currentTimeMillis) 1000)
+              (* 60 60 24 7))})
   
 (defn generate-salt
   "Return a new random salt"
@@ -26,12 +29,11 @@
       
 (defn update-or-insert!
   "Updates columns or inserts a new row in the specified table"
-  [db table row where-clause]
-  (jdbc/with-db-transaction [t-con db]
+  [t-con table row where-clause]
     (let [result (jdbc/update! t-con table row where-clause)]
       (if (zero? (first result))
         (jdbc/insert! t-con table row)
-        result))))
+        result)))
         
       
 (defn table-exist?

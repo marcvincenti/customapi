@@ -37,17 +37,23 @@
   (let [{:keys [username email picture gender password]} user
         salt (db-utils/generate-salt) 
         hashedpassword (db-utils/pbkdf2 password salt)
-        access_token (db-utils/generate-token)]
+        access-token (db-utils/generate-token-map)]
     (try 
-      (-> (jdbc/insert! @db/db :users 
-            {:email email 
-             :username username 
-             :picture picture 
-             :gender gender 
-             :salt salt
-             :password hashedpassword})
-            first
-          return-private-profile)
+      (jdbc/with-db-transaction [t-con @db/db]
+        (let [ret (first 
+                    (jdbc/insert! t-con :users 
+                      {:email email 
+                       :username username 
+                       :picture picture 
+                       :gender gender 
+                       :salt salt
+                       :password hashedpassword}))]
+          (do
+            (jdbc/insert! t-con :tokens 
+              (assoc access-token :rel_user (ret :id)))
+            (-> ret
+                (assoc :access_token (:access_token access-token))
+                return-private-profile))))
       (catch Exception e (utils/make-error 500 "Unable to insert user in database")))))
 
 (defn update!
@@ -58,16 +64,25 @@
          (or (nil? (:picture user)) (string? (:picture user))), 
          (or (nil? (:gender user)) (valid/gender? (:gender user)))]}
   (let [{:keys [username email picture gender]} user
-        access_token (db-utils/generate-token)]
-    (try 
-      (do (jdbc/update! @db/db :users 
-            ;we avoid setting variables to null with this reduction
-            (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
-             {:username username
-              :picture picture
-              :gender gender}) ["email = ?" email])
-          (return-private-profile user))
-      (catch Exception e (utils/make-error 500 "Unable to update user in database")))))
+        access-token (db-utils/generate-token-map)]
+    ;(try 
+      (jdbc/with-db-transaction [t-con @db/db]
+        (let [ret (first 
+          (jdbc/update! t-con :users 
+              ;we avoid setting variables to null with this reduction
+              (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
+               {:username username
+                :picture picture
+                :gender gender}) ["email = ? RETURNING id" email]))]
+          (do
+            ;(db-utils/update-or-insert! t-con :tokens 
+              ;(assoc access-token :rel_user ret) ["rel_user = ?" ret])
+            (-> user
+                (assoc :access_token (:access_token access-token))
+                return-private-profile) 
+            (response {:data ret}))))
+      ;(catch Exception e (utils/make-error 500 "Unable to update user in database")))
+      ))
 
 (defn ^:private auth-connect
   "Register the user in database or update his profile"
@@ -89,10 +104,11 @@
 (defn auth-facebook
   "Authenticate a user with facebook access token"
   [token]
-  (try
+  ;(try
     (let [req (client/get "https://graph.facebook.com/v2.6/me" 
                 {:query-params {"fields" "name,email,gender,last_name,first_name,picture"
                  "access_token" token} :as :json-strict})
           picture (:url (:data (:picture (:body req))))]
       (auth-connect (assoc (:body req) :picture picture)))
-    (catch Exception e (utils/make-error 409 "Bad Facebook token"))))
+    ;(catch Exception e (utils/make-error 409 "Bad Facebook token")))
+    )
