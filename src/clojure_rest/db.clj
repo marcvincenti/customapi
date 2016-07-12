@@ -34,7 +34,7 @@
         [:gender "varchar(6)"]
         [:picture "VARCHAR(2083)"]
         [:salt "bytea"]
-        [:password "VARCHAR(40)"])))
+        [:password "VARCHAR(50)"])))
   (if-not (table-exist? "roles" profile)
     (do
       (jdbc/db-do-prepared profile
