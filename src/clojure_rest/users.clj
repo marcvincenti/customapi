@@ -19,13 +19,13 @@
     (response (select-keys user [:username :picture :gender :email :access_token])))
     
 (defn ^:private email-in-db?
-  "return true if the email is already present in db"
+  "return the id from the email or nil if mail not present"
   [email]
-  (not-empty (jdbc/query @db/db
+  (:id (first (jdbc/query @db/db
             ["SELECT id
              FROM users
              WHERE email = ?
-             LIMIT 1" email])))
+             LIMIT 1" email]))))
 
 (defn register!
   "Register a user in database"
@@ -58,14 +58,15 @@
 
 (defn update!
   "Update a user in database"
-  [user]
+  [user & [id-user]]
   {:pre [(valid/email-address? (:email user)),
          (or (nil? (:username user)) (string? (:username user))), 
          (or (nil? (:picture user)) (string? (:picture user))), 
          (or (nil? (:gender user)) (valid/gender? (:gender user)))]}
-  (let [{:keys [username email picture gender]} user
+  (let [id-user (or id-user 10)                                         ;TODO : replace 10 with the userid  from future wrapper
+        {:keys [username email picture gender]} user
         access-token (db-utils/generate-token-map)]
-    ;(try 
+    (try 
       (jdbc/with-db-transaction [t-con @db/db]
         (let [ret (first 
           (jdbc/update! t-con :users 
@@ -73,23 +74,22 @@
               (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
                {:username username
                 :picture picture
-                :gender gender}) ["email = ? RETURNING id" email]))]
+                :gender gender}) ["email = ?" email]))]
           (do
-            ;(db-utils/update-or-insert! t-con :tokens 
-              ;(assoc access-token :rel_user ret) ["rel_user = ?" ret])
+            (db-utils/update-or-insert! t-con :tokens 
+              (assoc access-token :rel_user id-user) ["rel_user = ?" id-user])
             (-> user
                 (assoc :access_token (:access_token access-token))
-                return-private-profile) 
-            (response {:data ret}))))
-      ;(catch Exception e (utils/make-error 500 "Unable to update user in database")))
-      ))
+                return-private-profile))))
+      (catch Exception e (utils/make-error 500 "Unable to update user in database")))))
 
 (defn ^:private auth-connect
   "Register the user in database or update his profile"
   [user]
-    (let [formatted-user (rename-keys user {:name :username})]
-      (if (email-in-db? (:email formatted-user))
-        (update! formatted-user)
+    (let [formatted-user (rename-keys user {:name :username})
+          id-user (email-in-db? (:email formatted-user))]
+      (if id-user
+        (update! formatted-user id-user)
         (register! formatted-user))))
 
 (defn auth-google
@@ -104,11 +104,10 @@
 (defn auth-facebook
   "Authenticate a user with facebook access token"
   [token]
-  ;(try
+  (try
     (let [req (client/get "https://graph.facebook.com/v2.6/me" 
                 {:query-params {"fields" "name,email,gender,last_name,first_name,picture"
                  "access_token" token} :as :json-strict})
           picture (:url (:data (:picture (:body req))))]
       (auth-connect (assoc (:body req) :picture picture)))
-    ;(catch Exception e (utils/make-error 409 "Bad Facebook token")))
-    )
+    (catch Exception e (utils/make-error 409 "Bad Facebook token"))))
