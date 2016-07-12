@@ -1,6 +1,5 @@
 (ns clojure-rest.utils
-	(:require [clj-time.local :as l]
-            [clojure.java.io :only [as-file input-stream output-stream] :as io])
+	(:require [clojure.java.io :only [as-file input-stream output-stream] :as io])
   (import javax.imageio.ImageIO
           java.awt.image.BufferedImage))
 
@@ -19,11 +18,6 @@
   "Like slurp but with binary files"
   [filename]
   (java.io.File. filename))
-  
-(defn current-iso-8601-date
-  "Returns current ISO 8601 compliant date."
-  []
-  (l/format-local-time (l/local-now) :basic-date-time))
   
 (defn make-error
   "Make an error response"

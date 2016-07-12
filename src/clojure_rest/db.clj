@@ -39,10 +39,10 @@
     (do
       (jdbc/db-do-prepared profile
         (ddl/create-table :roles
-          [:id :serial "PRIMARY KEY"]
+          [:id "integer" "PRIMARY KEY"]
           [:name "varchar(16)" "NOT NULL" "UNIQUE"]))
-      (jdbc/insert! profile :roles {:name "verified"})
-      (jdbc/insert! profile :roles {:name "admin"})))
+      (jdbc/insert! profile :roles {:id 100 :name "verified"})
+      (jdbc/insert! profile :roles {:id 200 :name "admin"})))
   (if-not (table-exist? "user_role" profile)
     (jdbc/db-do-prepared profile
       (ddl/create-table :user_role

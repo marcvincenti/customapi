@@ -19,13 +19,13 @@
     (response (select-keys user [:username :picture :gender :email :access_token])))
     
 (defn ^:private email-in-db?
-  "return true if the email is already present in db"
+  "return the id from the email or nil if mail not present"
   [email]
-  (not-empty (jdbc/query @db/db
+  (:id (first (jdbc/query @db/db
             ["SELECT id
              FROM users
              WHERE email = ?
-             LIMIT 1" email])))
+             LIMIT 1" email]))))
 
 (defn register!
   "Register a user in database"
@@ -37,44 +37,59 @@
   (let [{:keys [username email picture gender password]} user
         salt (db-utils/generate-salt) 
         hashedpassword (db-utils/pbkdf2 password salt)
-        access_token (db-utils/generate-token)]
+        access-token (db-utils/generate-token-map)]
     (try 
-      (-> (jdbc/insert! @db/db :users 
-            {:email email 
-             :username username 
-             :picture picture 
-             :gender gender 
-             :salt salt
-             :password hashedpassword})
-            first
-          return-private-profile)
+      (jdbc/with-db-transaction [t-con @db/db]
+        (let [ret (first 
+                    (jdbc/insert! t-con :users 
+                      {:email email 
+                       :username username 
+                       :picture picture 
+                       :gender gender 
+                       :salt salt
+                       :password hashedpassword}))]
+          (do
+            (jdbc/insert! t-con :tokens 
+              (assoc access-token :rel_user (ret :id)))
+            (-> ret
+                (assoc :access_token (:access_token access-token))
+                return-private-profile))))
       (catch Exception e (utils/make-error 500 "Unable to insert user in database")))))
 
 (defn update!
   "Update a user in database"
-  [user]
+  [user & [id-user]]
   {:pre [(valid/email-address? (:email user)),
          (or (nil? (:username user)) (string? (:username user))), 
          (or (nil? (:picture user)) (string? (:picture user))), 
          (or (nil? (:gender user)) (valid/gender? (:gender user)))]}
-  (let [{:keys [username email picture gender]} user
-        access_token (db-utils/generate-token)]
+  (let [id-user (or id-user 10)                                         ;TODO : replace 10 with the userid  from future wrapper
+        {:keys [username email picture gender]} user
+        access-token (db-utils/generate-token-map)]
     (try 
-      (do (jdbc/update! @db/db :users 
-            ;we avoid setting variables to null with this reduction
-            (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
-             {:username username
-              :picture picture
-              :gender gender}) ["email = ?" email])
-          (return-private-profile user))
+      (jdbc/with-db-transaction [t-con @db/db]
+        (let [ret (first 
+          (jdbc/update! t-con :users 
+              ;we avoid setting variables to null with this reduction
+              (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
+               {:username username
+                :picture picture
+                :gender gender}) ["email = ?" email]))]
+          (do
+            (db-utils/update-or-insert! t-con :tokens 
+              (assoc access-token :rel_user id-user) ["rel_user = ?" id-user])
+            (-> user
+                (assoc :access_token (:access_token access-token))
+                return-private-profile))))
       (catch Exception e (utils/make-error 500 "Unable to update user in database")))))
 
 (defn ^:private auth-connect
   "Register the user in database or update his profile"
   [user]
-    (let [formatted-user (rename-keys user {:name :username})]
-      (if (email-in-db? (:email formatted-user))
-        (update! formatted-user)
+    (let [formatted-user (rename-keys user {:name :username})
+          id-user (email-in-db? (:email formatted-user))]
+      (if id-user
+        (update! formatted-user id-user)
         (register! formatted-user))))
 
 (defn auth-google
