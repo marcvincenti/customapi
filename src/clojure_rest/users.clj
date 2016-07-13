@@ -4,6 +4,7 @@
             [clojure-rest.db-utils :as db-utils]
             [clojure-rest.db :as db]
             [clojure-rest.valid :as valid]
+            [clojure-rest.pictures :as pictures]
             [clj-http.client :as client]
             [ring.util.response :refer [response]]
             [clojure.set :refer [rename-keys]]))

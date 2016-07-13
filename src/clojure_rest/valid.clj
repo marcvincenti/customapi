@@ -1,5 +1,12 @@
 (ns clojure-rest.valid)
 
+(defn bytes? 
+  [x]
+  (if (nil? x)
+    false
+    (= (Class/forName "[B")
+       (.getClass x))))
+
 (defn email-address?
   "Returns true if the email address is valid, based on RFC 2822."
   [email]

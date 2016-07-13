@@ -3,9 +3,11 @@
   (:require [clojure.java.jdbc :as jdbc]
             [clojure-rest.db-utils :refer [table-exist?]]
             [jdbc.pool.c3p0 :as pool]
-            [java-jdbc.ddl :as ddl]))
+            [java-jdbc.ddl :as ddl]
+            [amazonica.aws.s3 :as s3]))
 
 (def db (atom nil))
+(def conn (atom nil))
 (def current-profile (atom nil))
 
 (def ^:private allowed-profiles #{:prod :test})
@@ -13,6 +15,9 @@
 (defn set-profile! [profile]
   {:pre [(get allowed-profiles profile)]}
   (reset! current-profile profile))
+  
+(def buckets 
+  {:users-profiles "clojure-api-users-profiles"})
 
 (def ^:private db-specs
   {:prod {:user (System/getenv "DATABASE_USER")
@@ -23,6 +28,16 @@
           :password "toortoor"
           :subname "//another.ctcyur2o6hny.eu-west-1.rds.amazonaws.com:5432/postgres"
           }})
+          
+(def ^:private conn-specs
+  {:prod {:access-key (System/getenv "AMAZON_ACCESS")
+          :secret-key (System/getenv "AMAZON_KEY")
+          :endpoint (System/getenv "AMAZON_ENDPOINT")
+          }
+   :test {:access-key "AKIAIKZWOA4I5Y43GDOA"
+          :secret-key "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"
+          :endpoint   "eu-west-1"
+         }})
 
 (defn ^:private create-user-db [profile]
   (if-not (table-exist? "users" profile)
@@ -55,13 +70,25 @@
         [:rel_user "integer" "UNIQUE" "references users(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
         [:access_token "varchar(36)" "PRIMARY KEY"]
         [:expire "bigint" "NOT NULL"]))))
+ 
+(defn ^:private amazon-setup [profile]
+  (doseq [[k v] (map identity buckets)] 
+    (when-not (s3/does-bucket-exist profile v) 
+      (s3/create-bucket profile v))))
             
 (defn init-db! [profile]
   {:pre [(get allowed-profiles profile)]}
-  (->> profile
+  (do 
+    ;connect and build Postgres users database
+    (->> profile
        (get db-specs)
        (merge {:classname "org.postgresql.Driver"
                :subprotocol "postgresql"})
        pool/make-datasource-spec
        (reset! db)
-       create-user-db))
+       create-user-db)
+    ;connect to amazon
+    (->> profile
+       (get conn-specs)
+       (reset! conn)
+       amazon-setup)))
