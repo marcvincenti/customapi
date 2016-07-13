@@ -11,10 +11,11 @@ Because of amazon bucket policy, you have to set your buckets names (you can jus
 #### Tests
  + You have to create a Postgres database and put the credentials in _"src/clojure_rest/db.clj"_ in the **db-specs** definition.
  + There is also an amazon connection, you have to configure an amazon connection with [IAM](https://console.aws.amazon.com/iam/home) 
-    + and then put credentials in _"src/clojure_rest/db.clj"_ in the **conn-specs** definition.
+    + and then put credentials in _"src/clojure_rest/db.clj"_ in the **conn-specs** definition. 
+    
 #### Production
-This part will come later.
-## Usage
+This part will come later. 
+## Usage 
 #### Connection
 Return a private *user* object following this model :
 ```
