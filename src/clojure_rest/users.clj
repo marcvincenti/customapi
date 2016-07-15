@@ -4,7 +4,7 @@
             [clojure-rest.db-utils :as db-utils]
             [clojure-rest.db :as db]
             [clojure-rest.valid :as valid]
-            [clojure-rest.pictures :as pictures]
+            [clojure-rest.pictures :as pic]
             [clj-http.client :as client]
             [ring.util.response :refer [response]]
             [clojure.set :refer [rename-keys]]))
@@ -34,7 +34,6 @@
   ([user]
   (if (and (valid/email-address? (:email user))
            (string? (:username user))
-           (valid/image-uri? (:picture user))
            (or (nil? (:gender user)) (valid/gender? (:gender user))))
     (let [{:keys [username email picture gender password]} user
           salt (db-utils/generate-salt) 
@@ -46,7 +45,7 @@
                       (jdbc/insert! t-con :users
                         {:email email
                          :username username
-                         :picture picture
+                         :picture (pic/return-uri picture)
                          :gender gender
                          :salt salt
                          :password hashedpassword}))]

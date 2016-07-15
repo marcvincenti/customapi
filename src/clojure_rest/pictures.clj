@@ -37,10 +37,10 @@
         (catch Exception e nil))))
 
 (defn return-uri
-  "take an uri or a file (png/jpg/gif) and return an uri"
+  "take an uri or a file (png/jpg) and return an uri"
   [picture]
   (if (or (nil? picture) (valid/image-uri? picture))
     picture
     (if (valid/bytes? picture)
-      (str "TOFOOO")
+      (save-pic picture)
       nil)))

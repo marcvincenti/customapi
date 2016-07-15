@@ -22,7 +22,7 @@
   "Returns true if picture uri is valid, based on RFC 2396."
   [uri]
   (if (string? uri)
-	  (let [re (str "^https?://(?:[a-z0-9-]+.)+[a-z]{2,6}(?:/[^/#?]+)+.(?:jpg|gif|png)$")]
+	  (let [re (str "^https?://(?:[a-z0-9-]+.)+[a-z]{2,6}(?:/[^/#?]+)+.(?:jpg|png|jpeg)$")]
       (boolean (re-matches (re-pattern re) uri)))
     false))
 

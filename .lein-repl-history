@@ -3,3 +3,15 @@
 ({:is 9} :id)
 (nil :id)
 (:id nil)
+(map + {:a 1 :b 2})
+(map inc {:a 1 :b 2})
+(map #(+ (second %)) {:a 1 :b 2})
+(map #(inc (second %)) {:a 1 :b 2})
+(map #((first %)(inc (second %))) {:a 1 :b 2})
+(map #({(first %)(inc (second %))}) {:a 1 :b 2})
+(def var {:a 1 :b 2})
+var
+(reduce (fn [new-map [key val]]
+          (assoc new-map key (inc val)))
+        {}
+        {:max 30 :min 10})
