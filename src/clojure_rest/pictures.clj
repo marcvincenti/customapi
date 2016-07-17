@@ -2,6 +2,7 @@
   (:require [amazonica.aws.s3 :refer [get-object put-object]]
             [clojure.java.io :refer [input-stream]]
             [clojure-rest.db :as db]
+            [clojure-rest.utils :as utils]
             [clojure-rest.valid :as valid])
   (:import java.io.ByteArrayOutputStream
            javax.imageio.ImageIO
@@ -26,7 +27,7 @@
   [file]
   (let [{:keys [tempfile]} file
         out (ByteArrayOutputStream.)
-        new-filename (str (java.util.UUID/randomUUID) ".png")]
+        new-filename (str (utils/uid) ".png")]
       (make-thumbnail (input-stream tempfile) out 500)
       (try 
         (future (put-object @db/conn
@@ -41,6 +42,6 @@
   [picture]
   (if (or (nil? picture) (valid/image-uri? picture))
     picture
-    (if (valid/bytes? picture)
+    (if (valid/pic-file? picture)
       (save-pic picture)
       nil)))

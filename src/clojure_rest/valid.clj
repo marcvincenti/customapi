@@ -1,11 +1,12 @@
 (ns clojure-rest.valid)
 
-(defn bytes? 
+(defn pic-file? 
   [x]
   (if (nil? x)
     false
-    (= (Class/forName "[B")
-       (.getClass x))))
+    (or 
+      (= (:content-type x) "image/jpeg")
+      (= (:content-type x) "image/png"))))
 
 (defn email-address?
   "Returns true if the email address is valid, based on RFC 2822."

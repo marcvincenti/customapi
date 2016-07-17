@@ -21,3 +21,8 @@
   [code msg]
   {:status code
    :body msg})
+
+(defn uid
+  "Generate an uid"
+  []
+  (.replaceAll (.toString (java.util.UUID/randomUUID)) "-" ""))
