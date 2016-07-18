@@ -4,7 +4,8 @@
             [clojure-rest.db-utils :refer [table-exist?]]
             [jdbc.pool.c3p0 :as pool]
             [java-jdbc.ddl :as ddl]
-            [amazonica.aws.s3 :as s3]))
+            [amazonica.aws.s3 :as s3]
+            [amazonica.core :refer [defcredential]]))
 
 (def db (atom nil))
 (def conn (atom nil))
@@ -16,8 +17,7 @@
   {:pre [(get allowed-profiles profile)]}
   (reset! current-profile profile))
   
-(def buckets 
-  {:users-profiles "clojure-api-users-profiles"})
+(def bucket "clojure-api-users")
 
 (def ^:private db-specs
   {:prod {:user (System/getenv "DATABASE_USER")
@@ -72,9 +72,10 @@
         [:expire "bigint" "NOT NULL"]))))
  
 (defn ^:private amazon-setup [profile]
-  (doseq [[k v] (map identity buckets)] 
-    (when-not (s3/does-bucket-exist profile v) 
-      (s3/create-bucket profile v))))
+  (do
+    (defcredential (:access-key profile) (:secret-key profile) (:endpoint profile))
+    (when-not (s3/does-bucket-exist bucket) 
+      (s3/create-bucket bucket))))
             
 (defn init-db! [profile]
   {:pre [(get allowed-profiles profile)]}

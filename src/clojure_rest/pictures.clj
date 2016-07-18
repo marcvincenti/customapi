@@ -24,17 +24,20 @@
 
 (defn save-pic
   "Uploads a picture to S3, return a public uri to the file"
-  [file]
+  [file dir]
   (let [{:keys [tempfile]} file
         out (ByteArrayOutputStream.)
-        new-filename (str (utils/uid) ".png")]
+        new-filename (str dir "/" (utils/uid) ".png")]
       (make-thumbnail (input-stream tempfile) out 500)
-      (try 
-        (future (put-object @db/conn
-            :bucket-name (:users-profiles db/buckets)
+      (try (future 
+          (put-object
+            :bucket-name db/bucket
             :key new-filename
-            :input-stream (input-stream (.toByteArray out))))
-         new-filename
+            :input-stream (input-stream (.toByteArray out))
+            :metadata {:content-type "image/png" 
+                       :content-length (count (.toByteArray out))}
+            :access-control-list {:grant-permission ["AllUsers" "Read"]}))
+         (str "https://" (:endpoint @db/conn) ".amazonaws.com/" db/bucket "/" new-filename)
         (catch Exception e nil))))
 
 (defn return-uri
@@ -43,5 +46,5 @@
   (if (or (nil? picture) (valid/image-uri? picture))
     picture
     (if (valid/pic-file? picture)
-      (save-pic picture)
+      (save-pic picture "users")
       nil)))
