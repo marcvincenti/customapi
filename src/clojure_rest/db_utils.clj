@@ -19,10 +19,10 @@
   (crypto/bytes 64))
       
 (defn pbkdf2
-  "Get a hash for the given string and optional salt"
+  "Get a hash for the given string and salt"
   [x salt]
   (if (nil? x) nil
-    (let [k (PBEKeySpec. (.toCharArray x) (.getBytes salt) 1000 192)
+    (let [k (PBEKeySpec. (.toCharArray x) salt 1000 192)
           f (SecretKeyFactory/getInstance "PBKDF2WithHmacSHA1")]
       (format "%x"
         (java.math.BigInteger. (.getEncoded (.generateSecret f k)))))))

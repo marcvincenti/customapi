@@ -12,5 +12,6 @@
   
 (defroutes api
   (GET "/" [] (default-page))
+  (POST "/subscribe" {params :params} (users/register! params))
   (context "/oauth" [] oauth)
   (not-found {:status 404 :body "Ressource not found :("}))

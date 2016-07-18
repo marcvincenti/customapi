@@ -4,6 +4,7 @@
             [clojure-rest.db-utils :as db-utils]
             [clojure-rest.db :as db]
             [clojure-rest.valid :as valid]
+            [clojure-rest.pictures :as pic]
             [clj-http.client :as client]
             [ring.util.response :refer [response]]
             [clojure.set :refer [rename-keys]]))
@@ -28,33 +29,34 @@
              LIMIT 1" email]))))
 
 (defn register!
-  "Register a user in database"
-  [user]
-  {:pre [(valid/email-address? (:email user)), 
-         (string? (:username user)), 
-         (string? (:picture user)), 
-         (or (nil? (:gender user)) (valid/gender? (:gender user)))]}
-  (let [{:keys [username email picture gender password]} user
-        salt (db-utils/generate-salt) 
-        hashedpassword (db-utils/pbkdf2 password salt)
-        access-token (db-utils/generate-token-map)]
-    (try 
-      (jdbc/with-db-transaction [t-con @db/db]
-        (let [ret (first 
-                    (jdbc/insert! t-con :users 
-                      {:email email 
-                       :username username 
-                       :picture picture 
-                       :gender gender 
-                       :salt salt
-                       :password hashedpassword}))]
-          (do
-            (jdbc/insert! t-con :tokens 
-              (assoc access-token :rel_user (ret :id)))
-            (-> ret
-                (assoc :access_token (:access_token access-token))
-                return-private-profile))))
-      (catch Exception e (utils/make-error 500 "Unable to insert user in database")))))
+  "Register a user in database (at least: email / username / picture)"
+  ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
+  ([user]
+  (if (and (valid/email-address? (:email user))
+           (string? (:username user))
+           (or (nil? (:gender user)) (valid/gender? (:gender user))))
+    (let [{:keys [username email picture gender password]} user
+          salt (db-utils/generate-salt) 
+          hashedpassword (db-utils/pbkdf2 password salt)
+          access-token (db-utils/generate-token-map)]
+      (try 
+        (jdbc/with-db-transaction [t-con @db/db]
+          (let [ret (first 
+                      (jdbc/insert! t-con :users
+                        {:email email
+                         :username username
+                         :picture (pic/return-uri picture)
+                         :gender gender
+                         :salt salt
+                         :password hashedpassword}))]
+            (do
+              (jdbc/insert! t-con :tokens 
+                (assoc access-token :rel_user (ret :id)))
+              (-> ret
+                  (assoc :access_token (:access_token access-token))
+                  return-private-profile))))
+        (catch Exception e (utils/make-error 500 "Unable to insert this user in database"))))
+      (register!))))
 
 (defn update!
   "Update a user in database"

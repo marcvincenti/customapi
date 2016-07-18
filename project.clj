@@ -3,7 +3,7 @@
   :url "localhost"
   :min-lein-version "2.0.0"
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [compojure "1.5.0"]
+                 [compojure "1.5.1"]
                  [ring/ring-json "0.4.0"]
                  [org.clojure/java.jdbc "0.6.0"]
                  [java-jdbc/dsl "0.1.3"]
