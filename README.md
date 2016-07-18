@@ -31,6 +31,7 @@ You can connect with **[GET] -> /oauth/&lt;platform>/&lt;access_token>/**
 The following platforms are supported :
  + [facebook](https://www.facebook.com/)
  + [google](https://www.google.com/)
+ 
 #### Subscribtion
 Return a private *user* object following the precedent model.
 You can subscribe an user with **[POST] -> /subscribe/**
