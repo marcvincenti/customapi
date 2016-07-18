@@ -19,6 +19,14 @@
       (boolean (re-matches (re-pattern re) email)))
     false))
     
+(defn username?
+  "Returns true if the username is correct"
+  [uname]
+  (if (string? uname)
+	  (let [re (str "[\\w]{4,32}")]
+      (boolean (re-matches (re-pattern re) uname)))
+    false))
+    
 (defn image-uri?
   "Returns true if picture uri is valid, based on RFC 2396."
   [uri]
@@ -32,3 +40,6 @@
   [gender]
   (let [re (str "male|female")]
     (boolean (re-matches (re-pattern re) gender))))
+
+
+

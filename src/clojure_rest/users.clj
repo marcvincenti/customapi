@@ -32,31 +32,31 @@
   "Register a user in database (at least: email / username / picture)"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
   ([user]
-  (if (and (valid/email-address? (:email user))
-           (string? (:username user))
-           (or (nil? (:gender user)) (valid/gender? (:gender user))))
-    (let [{:keys [username email picture gender password]} user
-          salt (db-utils/generate-salt) 
-          hashedpassword (db-utils/pbkdf2 password salt)
-          access-token (db-utils/generate-token-map)]
-      (try 
-        (jdbc/with-db-transaction [t-con @db/db]
-          (let [ret (first 
-                      (jdbc/insert! t-con :users
-                        {:email email
-                         :username username
-                         :picture (pic/return-uri picture)
-                         :gender gender
-                         :salt salt
-                         :password hashedpassword}))]
-            (do
-              (jdbc/insert! t-con :tokens 
-                (assoc access-token :rel_user (ret :id)))
-              (-> ret
-                  (assoc :access_token (:access_token access-token))
-                  return-private-profile))))
-        (catch Exception e (utils/make-error 500 "Unable to insert this user in database"))))
-      (register!))))
+    (if (and (valid/email-address? (:email user))
+             (valid/username? (:username user))
+             (or (nil? (:gender user)) (valid/gender? (:gender user))))
+      (let [{:keys [username email picture gender password]} user
+            salt (db-utils/generate-salt) 
+            hashedpassword (db-utils/pbkdf2 password salt)
+            access-token (db-utils/generate-token-map)]
+        (try 
+          (jdbc/with-db-transaction [t-con @db/db]
+            (let [ret (first 
+                        (jdbc/insert! t-con :users
+                          {:email email
+                           :username username
+                           :picture (pic/return-uri picture)
+                           :gender gender
+                           :salt salt
+                           :password hashedpassword}))]
+              (do
+                (jdbc/insert! t-con :tokens 
+                  (assoc access-token :rel_user (ret :id)))
+                (-> ret
+                    (assoc :access_token (:access_token access-token))
+                    return-private-profile))))
+          (catch Exception e (utils/make-error 500 "Unable to insert this user in database"))))
+        (register!))))
 
 (defn update!
   "Update a user in database"
@@ -84,6 +84,29 @@
                 (assoc :access_token (:access_token access-token))
                 return-private-profile))))
       (catch Exception e (utils/make-error 500 "Unable to update user in database")))))
+      
+(defn login!
+  "Log the user and return his informations"
+  ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
+  ([user]
+    (if (and (or (valid/email-address? (:email user))
+                 (valid/username? (:email user)))
+             (string? (:password user)))
+      (let [{:keys [email password]} user]
+        (try 
+          (jdbc/with-db-transaction [t-con @db/db]
+            (let [ret (first
+                        (jdbc/query t-con
+                          ["SELECT *
+                           FROM users
+                           WHERE email = ? OR username = ?
+                           LIMIT 1" email email]))
+                  hashedpassword (db-utils/pbkdf2 password (:salt ret))]
+                (if (= hashedpassword (:password ret))
+                  (return-private-profile ret)
+                  (utils/make-error 401 "Wrong credentials."))))
+          (catch Exception e (utils/make-error 500 "Unable to log in."))))
+      (login!))))
 
 (defn ^:private auth-connect
   "Register the user in database or update his profile"

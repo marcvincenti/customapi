@@ -33,10 +33,11 @@ The following platforms are supported :
  + [google](https://www.google.com/)
  
 #### Subscribtion
-Return a private *user* object following the precedent model.
-You can subscribe an user with **[POST] -> /subscribe/**
+Return a private *user* object following the precedent model.\
+You can subscribe an user with **[POST] -> /me/subscribe/**
 using the following values :
  + email (string)
  + username (string)
+ + password (string)
  + gender ("male" or "female" or _NULL_) - optionnal
  + picture (url#string or a file) - optionnal
