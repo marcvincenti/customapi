@@ -10,6 +10,10 @@
   (GET "/facebook/:token" [token] (users/auth-facebook token))
   (GET "/google/:token" [token] (users/auth-google token)))
   
+(defroutes testing
+  (GET "/username/:uname" [uname] (users/test-username! uname))
+  (GET "/email/:email" [email] (users/test-email! email)))
+  
 (defroutes me
   (POST "/subscribe" {params :params} (users/register! params))
   (POST "/login" {params :params} (users/login! params)))
@@ -18,4 +22,5 @@
   (GET "/" [] (default-page))
   (context "/oauth" [] oauth)
   (context "/me" [] me)
+  (context "/test" [] testing)
   (not-found {:status 404 :body "Ressource not found :("}))

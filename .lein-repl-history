@@ -15,3 +15,9 @@ var
           (assoc new-map key (inc val)))
         {}
         {:max 30 :min 10})
+(lower-case 'Vins@qf.tr')
+(clojure.string/lower-case 'VinC@enT.ima.rC')
+(clojure.string/lower-case 'VinCenT.ima.rC')
+(def mail 'VinCenTi@MaRC.CoM')
+(def mail 'VinCenTi\@MaRC.CoM')
+(def mail 'VinCenTi\\@MaRC.CoM')

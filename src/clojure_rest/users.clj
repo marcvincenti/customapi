@@ -21,42 +21,69 @@
     
 (defn ^:private email-in-db?
   "return the id from the email or nil if mail not present"
-  [email]
-  (:id (first (jdbc/query @db/db
+  [conn email]
+  (:id (first (jdbc/query conn
             ["SELECT id
              FROM users
-             WHERE email = ?
+             WHERE email ilike ?
              LIMIT 1" email]))))
+
+(defn ^:private username-available?
+  "return true if not used"
+  [conn username]
+  (empty? (jdbc/query conn
+            ["SELECT id
+             FROM users
+             WHERE username ilike ?
+             LIMIT 1" username])))
+             
+(defn test-username!
+  "Check if the username is already taken and send back a response to the client"
+  [username]
+    (try 
+      (if (username-available? @db/db username)
+        (response {:username username :available true})
+        (utils/make-error 423 {:username username :available false}))
+      (catch Exception e (utils/make-error 500 "Unable to request the database"))))
+      
+(defn test-email!
+  "Check if the email is already taken and send back a response to the client"
+  [email]
+    (try 
+      (if (email-in-db? @db/db email)
+        (utils/make-error 423 {:email email :available false})
+        (response {:email email :available true}))
+      (catch Exception e (utils/make-error 500 "Unable to request the database"))))
 
 (defn register!
   "Register a user in database (at least: email / username / picture)"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
   ([user]
-    (if (and (valid/email-address? (:email user))
-             (valid/username? (:username user))
-             (or (nil? (:gender user)) (valid/gender? (:gender user))))
-      (let [{:keys [username email picture gender password]} user
-            salt (db-utils/generate-salt) 
-            hashedpassword (db-utils/pbkdf2 password salt)
-            access-token (db-utils/generate-token-map)]
-        (try 
-          (jdbc/with-db-transaction [t-con @db/db]
-            (let [ret (first 
-                        (jdbc/insert! t-con :users
-                          {:email email
-                           :username username
-                           :picture (pic/return-uri picture)
-                           :gender gender
-                           :salt salt
-                           :password hashedpassword}))]
-              (do
-                (jdbc/insert! t-con :tokens 
-                  (assoc access-token :rel_user (ret :id)))
-                (-> ret
-                    (assoc :access_token (:access_token access-token))
-                    return-private-profile))))
-          (catch Exception e (utils/make-error 500 "Unable to insert this user in database"))))
-        (register!))))
+    (try 
+      (jdbc/with-db-transaction [t-con @db/db]
+        (if (and (and (valid/email-address? (:email user)) (not (email-in-db? t-con (:email user))))
+                 (and (valid/username? (:username user)) (username-available? t-con (:username user)))
+                 (or (nil? (:gender user)) (valid/gender? (:gender user))))
+          (let [{:keys [username email picture gender password]} user
+                salt (db-utils/generate-salt) 
+                hashedpassword (db-utils/pbkdf2 password salt)
+                access-token (db-utils/generate-token-map)]
+                  (let [ret (first 
+                              (jdbc/insert! t-con :users
+                                {:email (clojure.string/lower-case email)
+                                 :username username
+                                 :picture (pic/return-uri picture)
+                                 :gender gender
+                                 :salt salt
+                                 :password hashedpassword}))]
+                    (do
+                      (jdbc/insert! t-con :tokens 
+                        (assoc access-token :rel_user (ret :id)))
+                      (-> ret
+                          (assoc :access_token (:access_token access-token))
+                          return-private-profile))))
+            (register!)))
+          (catch Exception e (utils/make-error 500 "Unable to insert this user in database")))))
 
 (defn update!
   "Update a user in database"
@@ -76,7 +103,7 @@
               (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
                {:username username
                 :picture picture
-                :gender gender}) ["email = ?" email]))]
+                :gender gender}) ["email ilike ?" email]))]
           (do
             (db-utils/update-or-insert! t-con :tokens 
               (assoc access-token :rel_user id-user) ["rel_user = ?" id-user])
@@ -99,7 +126,7 @@
                         (jdbc/query t-con
                           ["SELECT *
                            FROM users
-                           WHERE email = ? OR username = ?
+                           WHERE email ilike ? OR username ilike ?
                            LIMIT 1" email email]))
                   hashedpassword (db-utils/pbkdf2 password (:salt ret))]
                 (if (= hashedpassword (:password ret))
@@ -112,7 +139,7 @@
   "Register the user in database or update his profile"
   [user]
     (let [formatted-user (rename-keys user {:name :username})
-          id-user (email-in-db? (:email formatted-user))]
+          id-user (email-in-db? @db/db (:email formatted-user))]
       (if id-user
         (update! formatted-user id-user)
         (register! formatted-user))))
