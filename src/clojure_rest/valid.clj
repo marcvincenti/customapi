@@ -23,7 +23,7 @@
   "Returns true if the username is correct"
   [uname]
   (if (string? uname)
-	  (let [re (str "[\\w]{4,32}")]
+	  (let [re (str "[\\w ]{4,32}")]
       (boolean (re-matches (re-pattern re) uname)))
     false))
     
@@ -31,7 +31,7 @@
   "Returns true if picture uri is valid, based on RFC 2396."
   [uri]
   (if (string? uri)
-	  (let [re (str "^https?://(?:[a-z0-9-]+.)+[a-z]{2,6}(?:/[^/#?]+)+.(?:jpg|png|jpeg)$")]
+	  (let [re (str "(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*\\.(?:jpg|jpeg|png))(?:\\?([^#]*))?(?:#(.*))?")]
       (boolean (re-matches (re-pattern re) uri)))
     false))
 

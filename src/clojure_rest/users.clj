@@ -54,6 +54,15 @@
         (utils/make-error 423 {:email email :available false})
         (response {:email email :available true}))
       (catch Exception e (utils/make-error 500 "Unable to request the database"))))
+      
+(defn ^:private refresh-token
+  "insert a token for a given id and return the token string"
+  [conn id-user]
+  (let [access-token (db-utils/generate-token-map)]
+    (do
+      (db-utils/update-or-insert! conn :tokens 
+        (assoc access-token :rel_user id-user) ["rel_user = ?" id-user])
+      (:access_token access-token))))
 
 (defn register!
   "Register a user in database (at least: email / username / picture)"
@@ -67,21 +76,18 @@
           (let [{:keys [username email picture gender password]} user
                 salt (db-utils/generate-salt) 
                 hashedpassword (db-utils/pbkdf2 password salt)
-                access-token (db-utils/generate-token-map)]
-                  (let [ret (first 
-                              (jdbc/insert! t-con :users
-                                {:email (clojure.string/lower-case email)
-                                 :username username
-                                 :picture (pic/return-uri picture)
-                                 :gender gender
-                                 :salt salt
-                                 :password hashedpassword}))]
-                    (do
-                      (jdbc/insert! t-con :tokens 
-                        (assoc access-token :rel_user (ret :id)))
-                      (-> ret
-                          (assoc :access_token (:access_token access-token))
-                          return-private-profile))))
+                ret (first 
+                      (jdbc/insert! t-con :users
+                        {:email (clojure.string/lower-case email)
+                         :username username
+                         :picture (pic/return-uri picture)
+                         :gender gender
+                         :salt salt
+                         :password hashedpassword}))
+                     ]
+                (-> ret
+                    (assoc :access_token (refresh-token t-con (:id ret))) 
+                    return-private-profile))
             (register!)))
           (catch Exception e (utils/make-error 500 "Unable to insert this user in database")))))
 
@@ -93,8 +99,7 @@
          (or (nil? (:picture user)) (string? (:picture user))), 
          (or (nil? (:gender user)) (valid/gender? (:gender user)))]}
   (let [id-user (or id-user 10)                                         ;TODO : replace 10 with the userid  from future wrapper
-        {:keys [username email picture gender]} user
-        access-token (db-utils/generate-token-map)]
+        {:keys [username email picture gender]} user]
     (try 
       (jdbc/with-db-transaction [t-con @db/db]
         (let [ret (first 
@@ -102,14 +107,11 @@
               ;we avoid setting variables to null with this reduction
               (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
                {:username username
-                :picture picture
+                :picture (pic/return-uri picture)
                 :gender gender}) ["email ilike ?" email]))]
-          (do
-            (db-utils/update-or-insert! t-con :tokens 
-              (assoc access-token :rel_user id-user) ["rel_user = ?" id-user])
-            (-> user
-                (assoc :access_token (:access_token access-token))
-                return-private-profile))))
+          (-> user
+              (assoc :access_token (refresh-token t-con id-user)) 
+              return-private-profile)))
       (catch Exception e (utils/make-error 500 "Unable to update user in database")))))
       
 (defn login!
@@ -129,8 +131,10 @@
                            WHERE email ilike ? OR username ilike ?
                            LIMIT 1" email email]))
                   hashedpassword (db-utils/pbkdf2 password (:salt ret))]
-                (if (= hashedpassword (:password ret))
-                  (return-private-profile ret)
+                (if (= hashedpassword (:password ret))      
+                  (-> ret
+                      (assoc :access_token (refresh-token t-con (:id ret))) 
+                      return-private-profile)
                   (utils/make-error 401 "Wrong credentials."))))
           (catch Exception e (utils/make-error 500 "Unable to log in."))))
       (login!))))
