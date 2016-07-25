@@ -1,6 +1,7 @@
 (ns clojure-rest.routes
   (:require [compojure.core :refer :all]
             [compojure.route :refer [not-found]]
+            [clojure-rest.wrappers :as wps]
             [clojure-rest.users :as users]))
 
 (defn ^:private default-page []
@@ -15,6 +16,8 @@
   (GET "/email/:email" [email] (users/test-email! email)))
   
 (defroutes me
+  (wps/require-access-token 
+    (GET "/" {params :params user-id :user-id} {:body (str user-id)}))
   (POST "/subscribe" {params :params} (users/register! params))
   (POST "/login" {params :params} (users/login! params)))
   

@@ -1,5 +1,6 @@
 (ns clojure-rest.wrappers
-  (:require [clojure-rest.utils :as utils]))
+  (:require [clojure-rest.utils :as utils]
+            [clojure-rest.users :as users]))
 
 (defn allow-cross-origin
   [handler]
@@ -20,6 +21,10 @@
 (defn require-access-token 
   [handler]
   (fn [request]
-    (if (get-in request [:params :token])
-      (handler request)
-      (utils/make-error 403 "No access token provided"))))
+    (let [access-token (get-in request [:params :access_token])]
+      (if access-token
+        (let [user (users/user-from-token access-token)]
+          (if user 
+            (handler (assoc request :user-id (:rel_user user)))
+            (utils/make-error 403 "Your token is either perimed or invalid")))
+        (utils/make-error 403 "No access token provided")))))

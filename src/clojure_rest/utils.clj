@@ -21,6 +21,11 @@
   [code msg]
   {:status code
    :body msg})
+   
+(defn timestamp
+  "Return the actual unix timestamp in second"
+  []
+  (quot (System/currentTimeMillis) 1000))
 
 (defn uid
   "Generate an uid"

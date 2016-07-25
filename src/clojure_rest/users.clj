@@ -8,6 +8,15 @@
             [clj-http.client :as client]
             [ring.util.response :refer [response]]
             [clojure.set :refer [rename-keys]]))
+            
+(defn user-from-token
+  "return a user from a given token or nil"
+  [token]
+  (first (jdbc/query @db/db
+            ["SELECT *
+             FROM tokens
+             WHERE access_token = ? AND expire > ?
+             LIMIT 1" token (utils/timestamp)])))
    
 (defn ^:private return-public-profile
   "return a public user profile"

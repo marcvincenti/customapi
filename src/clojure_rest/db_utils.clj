@@ -1,5 +1,6 @@
 (ns clojure-rest.db-utils
 	(:require [crypto.random :as crypto]
+            [clojure-rest.utils :as utils]
             [clojure.java.jdbc :as jdbc])
   (import java.security.SecureRandom
           javax.crypto.SecretKeyFactory
@@ -10,7 +11,7 @@
   []
   {:access_token (str (java.util.UUID/randomUUID))
    :expire (+ 
-              (quot (System/currentTimeMillis) 1000)
+              (utils/timestamp)
               (* 60 60 24 7))})
   
 (defn generate-salt
