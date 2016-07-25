@@ -27,10 +27,15 @@ Return a private *user* object following this model :
 	access_token : "..."
 }
 ```
-You can connect with **[GET] -> /oauth/&lt;platform>/&lt;access_token>/**
+You can connect with **[GET] -> /oauth/&lt;platform>/&lt;access_token>/** \
 The following platforms are supported :
  + [facebook](https://www.facebook.com/)
  + [google](https://www.google.com/)
+ 
+Or using **[POST] -> /me/login/** \
+with this values :
+ + email (string), also accept a username in this field
+ + password (string)
  
 #### Subscribtion
 Return a private *user* object following the precedent model.\
