@@ -98,8 +98,7 @@
          (or (nil? (:username user)) (string? (:username user))), 
          (or (nil? (:picture user)) (string? (:picture user))), 
          (or (nil? (:gender user)) (valid/gender? (:gender user)))]}
-  (let [id-user (or id-user 10)                                         ;TODO : replace 10 with the userid  from future wrapper
-        {:keys [username email picture gender]} user]
+  (let [{:keys [username email picture gender]} user]
     (try 
       (jdbc/with-db-transaction [t-con @db/db]
         (let [ret (first 
@@ -109,9 +108,10 @@
                {:username username
                 :picture (pic/return-uri picture)
                 :gender gender}) ["email ilike ?" email]))]
-          (-> user
-              (assoc :access_token (refresh-token t-con id-user)) 
-              return-private-profile)))
+          (return-private-profile 
+            (if id-user 
+              (assoc user :access_token (refresh-token t-con id-user)) 
+              user))))
       (catch Exception e (utils/make-error 500 "Unable to update user in database")))))
       
 (defn login!
