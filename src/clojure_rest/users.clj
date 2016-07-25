@@ -12,11 +12,11 @@
 (defn user-from-token
   "return a user from a given token or nil"
   [token]
-  (first (jdbc/query @db/db
-            ["SELECT *
+  (:rel_user (first (jdbc/query @db/db
+            ["SELECT rel_user
              FROM tokens
              WHERE access_token = ? AND expire > ?
-             LIMIT 1" token (utils/timestamp)])))
+             LIMIT 1" token (utils/timestamp)]))))
    
 (defn ^:private return-public-profile
   "return a public user profile"
