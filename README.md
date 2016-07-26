@@ -5,9 +5,11 @@ You can run it :
 ```
 web: lein ring server-headless
 ```
+
 ## Configuration
 This is using a PostgreSQL database and an [Amazon AWS](https://aws.amazon.com/fr/console/) account.\
 Because of amazon bucket policy, you have to set your buckets names (you can just add your corporation name before each bucket name for example) _"src/clojure_rest/db.clj"_ at the **buckets** definition
+
 #### Tests
  + You have to create a Postgres database and put the credentials in _"src/clojure_rest/db.clj"_ in the **db-specs** definition.
  + There is also an amazon connection, you have to configure an amazon connection with [IAM](https://console.aws.amazon.com/iam/home) 
@@ -15,8 +17,10 @@ Because of amazon bucket policy, you have to set your buckets names (you can jus
     
 #### Production
 This part will come later. 
-## Usage 
-#### Connection
+
+# Usage 
+
+### Connection
 Return a private *user* object following this model :
 ```
 {
@@ -32,14 +36,18 @@ The following platforms are supported :
  + [facebook](https://www.facebook.com/)
  + [google](https://www.google.com/)
  
-Or using **[POST] -> /me/login/** \
+Or using **[POST] -> /login/** \
 with this values :
  + email (string), also accept a username in this field
  + password (string)
  
+### Object "me"
+You can get your profile informations with **[GET] -> /me/**
+But you have to provide an *access_token* in the url.
+
 #### Subscribtion
 Return a private *user* object following the precedent model.\
-You can subscribe an user with **[POST] -> /me/subscribe/**
+You can subscribe an user with **[POST] -> /me/**
 using the following values :
  + email (string)
  + username (string)

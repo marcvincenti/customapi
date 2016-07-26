@@ -72,12 +72,25 @@
       (db-utils/update-or-insert! conn :tokens 
         (assoc access-token :rel_user id-user) ["rel_user = ?" id-user])
       (:access_token access-token))))
+      
+(defn get-my-profile!
+  "fetch an user knowing his id"
+  [user-id]
+    (try 
+      (return-private-profile
+        (first 
+          (jdbc/query @db/db
+            ["SELECT *
+             FROM users
+             WHERE id = ? 
+             LIMIT 1" user-id])))
+      (catch Exception e (utils/make-error 500 "Unable to request the database"))))
 
 (defn register!
   "Register a user in database (at least: email / username / picture)"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
   ([user]
-    (try 
+    ;(try 
       (jdbc/with-db-transaction [t-con @db/db]
         (if (and (and (valid/email-address? (:email user)) (not (email-in-db? t-con (:email user))))
                  (and (valid/username? (:username user)) (username-available? t-con (:username user)))
@@ -98,7 +111,8 @@
                     (assoc :access_token (refresh-token t-con (:id ret))) 
                     return-private-profile))
             (register!)))
-          (catch Exception e (utils/make-error 500 "Unable to insert this user in database")))))
+          ;(catch Exception e (utils/make-error 500 "Unable to insert this user in database")))
+          ))
 
 (defn update!
   "Update a user in database"

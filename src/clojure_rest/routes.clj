@@ -16,14 +16,14 @@
   (GET "/email/:email" [email] (users/test-email! email)))
   
 (defroutes me
+  (POST "/" {params :params} (users/register! params))
   (wps/require-access-token 
-    (GET "/" {params :params user-id :user-id} {:body (str user-id)}))
-  (POST "/subscribe" {params :params} (users/register! params))
-  (POST "/login" {params :params} (users/login! params)))
+    (GET "/" {user-id :user-id} (users/get-my-profile! user-id))))
   
 (defroutes api
   (GET "/" [] (default-page))
   (context "/oauth" [] oauth)
+  (POST "/login" {params :params} (users/login! params))
   (context "/me" [] me)
   (context "/test" [] testing)
   (not-found {:status 404 :body "Ressource not found :("}))

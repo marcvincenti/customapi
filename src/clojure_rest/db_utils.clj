@@ -9,7 +9,7 @@
 (defn generate-token-map
   "Return a new token access and an expiration unix time in a map"
   []
-  {:access_token (str (java.util.UUID/randomUUID))
+  {:access_token (utils/uid)
    :expire (+ 
               (utils/timestamp)
               (* 60 60 24 7))})
