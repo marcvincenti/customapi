@@ -18,7 +18,9 @@
 (defroutes me
   (POST "/" {params :params} (users/register! params))
   (wps/require-access-token 
-    (GET "/" {user-id :user-id} (users/get-my-profile! user-id))))
+    (GET "/" {user-id :user-id} (users/get-my-profile! user-id)))
+  (wps/require-access-token 
+    (DELETE "/" {user-id :user-id params :params} (users/delete-profile! user-id params))))
   
 (defroutes api
   (GET "/" [] (default-page))

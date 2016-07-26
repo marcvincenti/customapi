@@ -53,7 +53,7 @@
       (if (username-available? @db/db username)
         (response {:username username :available true})
         (utils/make-error 423 {:username username :available false}))
-      (catch Exception e (utils/make-error 500 "Unable to request the database"))))
+      (catch Exception e (utils/make-error 500 "Unable to request the database."))))
       
 (defn test-email!
   "Check if the email is already taken and send back a response to the client"
@@ -62,7 +62,7 @@
       (if (email-in-db? @db/db email)
         (utils/make-error 423 {:email email :available false})
         (response {:email email :available true}))
-      (catch Exception e (utils/make-error 500 "Unable to request the database"))))
+      (catch Exception e (utils/make-error 500 "Unable to request the database."))))
       
 (defn ^:private refresh-token
   "insert a token for a given id and return the token string"
@@ -84,7 +84,7 @@
              FROM users
              WHERE id = ? 
              LIMIT 1" user-id])))
-      (catch Exception e (utils/make-error 500 "Unable to request the database"))))
+      (catch Exception e (utils/make-error 500 "Unable to request the database."))))
 
 (defn register!
   "Register a user in database (at least: email / username / picture)"
@@ -135,7 +135,7 @@
             (if id-user 
               (assoc user :access_token (refresh-token t-con id-user)) 
               user))))
-      (catch Exception e (utils/make-error 500 "Unable to update user in database")))))
+      (catch Exception e (utils/make-error 500 "Unable to update user in database.")))))
       
 (defn login!
   "Log the user and return his informations"
@@ -171,8 +171,30 @@
           ["DELETE FROM tokens
            WHERE rel_user = ?
            RETURNING rel_user" user-id])
-        {:body "Success"})
-      (catch Exception e (utils/make-error 500 "Unable to request the database"))))
+        {:body "Success."})
+      (catch Exception e (utils/make-error 500 "Unable to request the database."))))
+      
+(defn delete-profile!
+  "remove the user from the database, require user password"
+  [user-id user-infos]
+  (try 
+    (jdbc/with-db-transaction [t-con @db/db]
+      (let [ret (first
+                  (jdbc/query t-con
+                    ["SELECT *
+                     FROM users
+                     WHERE id = ?
+                     LIMIT 1" user-id]))
+            hashedpassword (db-utils/pbkdf2 (:password user-infos) (:salt ret))]
+          (if (= hashedpassword (:password ret))
+            (do
+              (jdbc/query t-con
+                ["DELETE FROM users
+                 WHERE id = ?
+                 RETURNING id" user-id])
+              {:body "Success."})
+            (utils/make-error 500 "Wrong password."))))
+    (catch Exception e (utils/make-error 500 "Unable to request the database."))))
 
 (defn ^:private auth-connect
   "Register the user in database or update his profile"

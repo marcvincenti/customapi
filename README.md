@@ -58,6 +58,10 @@ using the following values :
  + gender ("male" or "female" or _NULL_) - optionnal
  + picture (url#string or a file) - optionnal
  
+#### Deleting user
+You can delete a user profile with **[DELETE] -> /me/**   
+But you have to provide an *access_token* in the url **AND** your password to successfully remove the user account.
+ 
 ## Usefull stuff
 You can request api for specific things like :
  + is username already taken ? **[GET] -> /test/username/&lt;string>** (case insensitive)
