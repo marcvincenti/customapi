@@ -161,6 +161,18 @@
                   (utils/make-error 401 "Wrong credentials."))))
           (catch Exception e (utils/make-error 500 "Unable to log in."))))
       (login!))))
+      
+(defn logout!
+  "remove the user token in database"
+  [user-id]
+    (try 
+      (do
+        (jdbc/query @db/db
+          ["DELETE FROM tokens
+           WHERE rel_user = ?
+           RETURNING rel_user" user-id])
+        {:body "Success"})
+      (catch Exception e (utils/make-error 500 "Unable to request the database"))))
 
 (defn ^:private auth-connect
   "Register the user in database or update his profile"

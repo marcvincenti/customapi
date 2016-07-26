@@ -24,6 +24,8 @@
   (GET "/" [] (default-page))
   (context "/oauth" [] oauth)
   (POST "/login" {params :params} (users/login! params))
+  (wps/require-access-token 
+    (POST "/logout" {user-id :user-id} (users/logout! user-id)))
   (context "/me" [] me)
   (context "/test" [] testing)
   (not-found {:status 404 :body "Ressource not found :("}))
