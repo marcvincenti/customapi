@@ -89,14 +89,13 @@
 (defn register!
   "Register a user in database (at least: email / username / picture)"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
-  ([user]
+  ([{:keys [username email picture gender password] :as user}]
     (try 
       (jdbc/with-db-transaction [t-con @db/db]
-        (if (and (and (valid/email-address? (:email user)) (not (email-in-db? t-con (:email user))))
-                 (and (valid/username? (:username user)) (not (username-in-db? t-con (:username user))))
-                 (or (nil? (:gender user)) (valid/gender? (:gender user))))
-          (let [{:keys [username email picture gender password]} user
-                salt (db-utils/generate-salt) 
+        (if (and (and (valid/email-address? email) (not (email-in-db? t-con email)))
+                 (and (valid/username? username) (not (username-in-db? t-con username)))
+                 (or (nil? gender) (valid/gender? gender)))
+          (let [salt (db-utils/generate-salt) 
                 hashedpassword (db-utils/pbkdf2 password salt)
                 ret (first 
                       (jdbc/insert! t-con :users
@@ -116,18 +115,17 @@
 (defn update!
   "Update a user in database"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
-  ([user id-user & [provider]]
+  ([{:keys [username email picture gender password] :as user} id-user & [provider]]
     (try 
       (jdbc/with-db-transaction [t-con @db/db]
-        (let [id-mail (email-in-db? t-con (:email user))
-              id-username (username-in-db? t-con (:username user))]
-          (if (and (or (nil? (:email user)) (and (valid/email-address? (:email user)) 
+        (let [id-mail (email-in-db? t-con email)
+              id-username (username-in-db? t-con username)]
+          (if (and (or (nil? email) (and (valid/email-address? email) 
                                                  (or (not id-mail) (= id-user id-mail))))
-                   (or (nil? (:username user)) (and (valid/username? (:username user)) 
+                   (or (nil? username) (and (valid/username? username) 
                                                     (or (not id-username) (= id-user id-username))))
-                   (or (nil? (:gender user)) (valid/gender? (:gender user))))
-            (let [{:keys [username email picture gender]} user
-                  picture (pic/return-uri picture)
+                   (or (nil? gender) (valid/gender? gender)))
+            (let [picture (pic/return-uri picture)
                   ret (first 
                         (jdbc/update! t-con :users 
                             ;we avoid setting variables to null with this reduction
@@ -147,26 +145,25 @@
 (defn login!
   "Log the user and return his informations"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
-  ([user]
-    (if (and (or (valid/email-address? (:email user))
-                 (valid/username? (:email user)))
-             (string? (:password user)))
-      (let [{:keys [email password]} user]
-        (try 
-          (jdbc/with-db-transaction [t-con @db/db]
-            (let [ret (first
-                        (jdbc/query t-con
-                          ["SELECT *
-                           FROM users
-                           WHERE email ilike ? OR username ilike ?
-                           LIMIT 1" email email]))
-                  hashedpassword (db-utils/pbkdf2 password (:salt ret))]
-                (if (= hashedpassword (:password ret))      
-                  (-> ret
-                      (assoc :access_token (refresh-token t-con (:id ret))) 
-                      return-private-profile)
-                  (utils/make-error 401 "Wrong credentials."))))
-          (catch Exception e (utils/make-error 500 "Unable to log in."))))
+  ([{:keys [email password] :as user}]
+    (if (and (or (valid/email-address? email)
+                 (valid/username? email))
+             (string? password))
+      (try 
+        (jdbc/with-db-transaction [t-con @db/db]
+          (let [ret (first
+                      (jdbc/query t-con
+                        ["SELECT *
+                         FROM users
+                         WHERE email ilike ? OR username ilike ?
+                         LIMIT 1" email email]))
+                hashedpassword (db-utils/pbkdf2 password (:salt ret))]
+              (if (= hashedpassword (:password ret))      
+                (-> ret
+                    (assoc :access_token (refresh-token t-con (:id ret))) 
+                    return-private-profile)
+                (utils/make-error 401 "Wrong credentials."))))
+        (catch Exception e (utils/make-error 500 "Unable to log in.")))
       (login!))))
       
 (defn logout!
