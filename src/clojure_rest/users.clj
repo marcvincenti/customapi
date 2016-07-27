@@ -25,8 +25,8 @@
     
 (defn ^:private return-private-profile
   "return a private user profile"
-  [user]
-    (response (select-keys user [:username :picture :gender :email :access_token])))
+  [user & [options]]
+    (response (select-keys user [:username :picture :gender :email :access_token options])))
     
 (defn ^:private email-in-db?
   "return the id from the email or nil if mail not present"
@@ -115,7 +115,7 @@
 (defn update!
   "Update a user in database"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
-  ([{:keys [username email picture gender password] :as user} id-user & [provider]]
+  ([{:keys [username email picture gender oldpassword newpassword] :as user} id-user & [provider]]
     (try 
       (jdbc/with-db-transaction [t-con @db/db]
         (let [id-mail (email-in-db? t-con email)
@@ -124,8 +124,18 @@
                                                  (or (not id-mail) (= id-user id-mail))))
                    (or (nil? username) (and (valid/username? username) 
                                                     (or (not id-username) (= id-user id-username))))
-                   (or (nil? gender) (valid/gender? gender)))
+                   (or (nil? gender) (valid/gender? gender))
+                   (or (nil? newpassword) (and (string? newpassword) (not-empty newpassword))))
             (let [picture (pic/return-uri picture)
+                  user-pass (first
+                              (jdbc/query t-con
+                                ["SELECT password, salt
+                                 FROM users
+                                 WHERE id = ?
+                                 LIMIT 1" id-user]))
+                  password (if (= (db-utils/pbkdf2 oldpassword (:salt user-pass)) (:password user-pass))
+                                (db-utils/pbkdf2 newpassword (:salt user-pass))
+                                nil)
                   ret (first 
                         (jdbc/update! t-con :users 
                             ;we avoid setting variables to null with this reduction
@@ -133,12 +143,13 @@
                              {:email (clojure.string/lower-case email)
                               :username username
                               :picture picture
+                              :password password
                               :gender gender}) ["id = ?" id-user]))]
               (-> (if provider 
                     (assoc user :access_token (refresh-token t-con id-user)) 
                     (dissoc user :access_token))
-                  (conj (when picture [:picture picture]))
-                  return-private-profile))
+                  (conj (when picture [:picture picture]) (when newpassword [:passwordUpdate (if password "true" "false")]))
+                  (return-private-profile :passwordUpdate)))
             (update!))))
         (catch Exception e (utils/make-error 500 "Unable to insert this user in database")))))
       

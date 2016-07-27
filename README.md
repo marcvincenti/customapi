@@ -63,7 +63,9 @@ You can delete a user profile with **[DELETE] -> /me/**
 But you have to provide an *access_token* in the url **AND** your password (string) to successfully remove the user account.
 
 #### Updating user
-You can update a user profile with **[PUT] -> /me/** while providing an *access_token*.
+You can update a user profile with **[PUT] -> /me/** while providing an *access_token*.  
+However, to change the *password* field, you have to provide an *oldpassword* (string) **and** a *newpassword* (string).
+This will return a field named *passwordUpdate* (boolean).
  
 ## Usefull stuff
 You can request api for specific things like :
