@@ -37,22 +37,22 @@
              WHERE email ilike ?
              LIMIT 1" email]))))
 
-(defn ^:private username-available?
-  "return true if not used"
+(defn ^:private username-in-db?
+  "return the id from the username or nil if mail not present"
   [conn username]
-  (empty? (jdbc/query conn
+  (:id (first (jdbc/query conn
             ["SELECT id
              FROM users
              WHERE username ilike ?
-             LIMIT 1" username])))
+             LIMIT 1" username]))))
              
 (defn test-username!
   "Check if the username is already taken and send back a response to the client"
   [username]
     (try 
-      (if (username-available? @db/db username)
-        (response {:username username :available true})
-        (utils/make-error 423 {:username username :available false}))
+      (if (username-in-db? @db/db username)
+        (utils/make-error 423 {:username username :available false})
+        (response {:username username :available true}))
       (catch Exception e (utils/make-error 500 "Unable to request the database."))))
       
 (defn test-email!
@@ -90,10 +90,10 @@
   "Register a user in database (at least: email / username / picture)"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
   ([user]
-    ;(try 
+    (try 
       (jdbc/with-db-transaction [t-con @db/db]
         (if (and (and (valid/email-address? (:email user)) (not (email-in-db? t-con (:email user))))
-                 (and (valid/username? (:username user)) (username-available? t-con (:username user)))
+                 (and (valid/username? (:username user)) (not (username-in-db? t-con (:username user))))
                  (or (nil? (:gender user)) (valid/gender? (:gender user))))
           (let [{:keys [username email picture gender password]} user
                 salt (db-utils/generate-salt) 
@@ -111,31 +111,38 @@
                     (assoc :access_token (refresh-token t-con (:id ret))) 
                     return-private-profile))
             (register!)))
-          ;(catch Exception e (utils/make-error 500 "Unable to insert this user in database")))
-          ))
+          (catch Exception e (utils/make-error 500 "Unable to insert this user in database")))))
 
 (defn update!
   "Update a user in database"
-  [user & [id-user]]
-  {:pre [(valid/email-address? (:email user)),
-         (or (nil? (:username user)) (string? (:username user))), 
-         (or (nil? (:picture user)) (string? (:picture user))), 
-         (or (nil? (:gender user)) (valid/gender? (:gender user)))]}
-  (let [{:keys [username email picture gender]} user]
+  ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
+  ([user id-user & [provider]]
     (try 
       (jdbc/with-db-transaction [t-con @db/db]
-        (let [ret (first 
-          (jdbc/update! t-con :users 
-              ;we avoid setting variables to null with this reduction
-              (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
-               {:username username
-                :picture (pic/return-uri picture)
-                :gender gender}) ["email ilike ?" email]))]
-          (return-private-profile 
-            (if id-user 
-              (assoc user :access_token (refresh-token t-con id-user)) 
-              user))))
-      (catch Exception e (utils/make-error 500 "Unable to update user in database.")))))
+        (let [id-mail (email-in-db? t-con (:email user))
+              id-username (username-in-db? t-con (:username user))]
+          (if (and (or (nil? (:email user)) (and (valid/email-address? (:email user)) 
+                                                 (or (not id-mail) (= id-user id-mail))))
+                   (or (nil? (:username user)) (and (valid/username? (:username user)) 
+                                                    (or (not id-username) (= id-user id-username))))
+                   (or (nil? (:gender user)) (valid/gender? (:gender user))))
+            (let [{:keys [username email picture gender]} user
+                  picture (pic/return-uri picture)
+                  ret (first 
+                        (jdbc/update! t-con :users 
+                            ;we avoid setting variables to null with this reduction
+                            (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
+                             {:email (clojure.string/lower-case email)
+                              :username username
+                              :picture picture
+                              :gender gender}) ["id = ?" id-user]))]
+              (-> (if provider 
+                    (assoc user :access_token (refresh-token t-con id-user)) 
+                    (dissoc user :access_token))
+                  (conj (when picture [:picture picture]))
+                  return-private-profile))
+            (update!))))
+        (catch Exception e (utils/make-error 500 "Unable to insert this user in database")))))
       
 (defn login!
   "Log the user and return his informations"
@@ -198,11 +205,11 @@
 
 (defn ^:private auth-connect
   "Register the user in database or update his profile"
-  [user]
+  [user provider]
     (let [formatted-user (rename-keys user {:name :username})
           id-user (email-in-db? @db/db (:email formatted-user))]
       (if id-user
-        (update! formatted-user id-user)
+        (update! formatted-user id-user provider)
         (register! formatted-user))))
 
 (defn auth-google
@@ -211,7 +218,7 @@
   (try
     (let [req (client/get "https://www.googleapis.com/oauth2/v1/userinfo" 
                 {:query-params {"alt" "json" "access_token" token} :as :json-strict})]
-      (auth-connect (:body req)))
+      (auth-connect (:body req) "google"))
     (catch Exception e (utils/make-error 409 "Bad Google token"))))
       
 (defn auth-facebook
@@ -222,5 +229,5 @@
                 {:query-params {"fields" "name,email,gender,last_name,first_name,picture"
                  "access_token" token} :as :json-strict})
           picture (:url (:data (:picture (:body req))))]
-      (auth-connect (assoc (:body req) :picture picture)))
+      (auth-connect (assoc (:body req) :picture picture) "facebook"))
     (catch Exception e (utils/make-error 409 "Bad Facebook token"))))

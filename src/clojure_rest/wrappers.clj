@@ -23,8 +23,10 @@
   (fn [request]
     (let [access-token (get-in request [:params :access_token])]
       (if access-token
-        (let [user-id (users/user-from-token access-token)]
-          (if user-id
-            (handler (assoc request :user-id user-id))
-            (utils/make-error 403 "Your token is either perimed or invalid")))
+        (try
+          (let [user-id (users/user-from-token access-token)]
+            (if user-id
+              (handler (assoc request :user-id user-id))
+              (utils/make-error 403 "Your token is either perimed or invalid")))
+            (catch Exception e (utils/make-error 500 "Unable to request the database.")))
         (utils/make-error 403 "No access token provided")))))

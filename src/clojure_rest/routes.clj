@@ -20,14 +20,16 @@
   (wps/require-access-token 
     (GET "/" {user-id :user-id} (users/get-my-profile! user-id)))
   (wps/require-access-token 
+    (PUT "/" {user-id :user-id params :params} (users/update! params user-id)))
+  (wps/require-access-token 
     (DELETE "/" {user-id :user-id params :params} (users/delete-profile! user-id params))))
   
 (defroutes api
   (GET "/" [] (default-page))
   (context "/oauth" [] oauth)
+  (context "/me" [] me)
+  (context "/test" [] testing)
   (POST "/login" {params :params} (users/login! params))
   (wps/require-access-token 
     (POST "/logout" {user-id :user-id} (users/logout! user-id)))
-  (context "/me" [] me)
-  (context "/test" [] testing)
   (not-found {:status 404 :body "Ressource not found :("}))
