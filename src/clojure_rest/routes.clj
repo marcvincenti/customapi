@@ -17,12 +17,15 @@
   
 (defroutes me
   (POST "/" {params :params} (users/register! params))
-  (wps/require-access-token 
-    (GET "/" {user-id :user-id} (users/get-my-profile! user-id)))
-  (wps/require-access-token 
-    (PUT "/" {user-id :user-id params :params} (users/update! params user-id)))
-  (wps/require-access-token 
-    (DELETE "/" {user-id :user-id params :params} (users/delete-profile! user-id params))))
+  (wrap-routes 
+    (GET "/" {user-id :user-id} (users/get-my-profile! user-id))
+    wps/require-access-token)
+  (wrap-routes 
+    (PUT "/" {user-id :user-id params :params} (users/update! params user-id))
+    wps/require-access-token)
+  (wrap-routes
+    (DELETE "/" {user-id :user-id params :params} (users/delete-profile! user-id params))
+    wps/require-access-token))
   
 (defroutes api
   (GET "/" [] (default-page))
@@ -30,6 +33,7 @@
   (context "/me" [] me)
   (context "/test" [] testing)
   (POST "/login" {params :params} (users/login! params))
-  (wps/require-access-token 
-    (POST "/logout" {user-id :user-id} (users/logout! user-id)))
+  (wrap-routes 
+    (POST "/logout" {user-id :user-id} (users/logout! user-id))
+    wps/require-access-token)
   (not-found {:status 404 :body "Ressource not found :("}))
