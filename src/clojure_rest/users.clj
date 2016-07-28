@@ -8,22 +8,6 @@
             [clj-http.client :as client]
             [ring.util.response :refer [response]]
             [clojure.set :refer [rename-keys]]))
-      
-(defn test
-  []
-  {:body 
-    (valid/check-all 
-      
-        {:data "vincenq@df.com"
-         :function valid/xemail-address? 
-         :dataname "email" 
-         :required true}
-         
-         {:data nil
-         :function valid/xemail-address? 
-         :dataname "email" 
-         :required false}
-      )})
             
 (defn user-from-token
   "return a user from a given token or nil"
@@ -65,20 +49,24 @@
 (defn test-username!
   "Check if the username is already taken and send back a response to the client"
   [username]
-    (try 
-      (if (username-in-db? @db/db username)
-        (utils/make-error 423 {:username username :available false})
-        (response {:username username :available true}))
-      (catch Exception e (utils/make-error 500 "Unable to request the database."))))
+  (let [errors (valid/check {:data username :function valid/xusername? :dataname "username" :required true})]
+    (if errors (utils/make-error 400 errors)
+      (try 
+        (if (username-in-db? @db/db username)
+          (utils/make-error 423 {:username username :available false})
+          (response {:username username :available true}))
+        (catch Exception e (utils/make-error 500 "Unable to request the database."))))))
       
 (defn test-email!
   "Check if the email is already taken and send back a response to the client"
   [email]
-    (try 
-      (if (email-in-db? @db/db email)
-        (utils/make-error 423 {:email email :available false})
-        (response {:email email :available true}))
-      (catch Exception e (utils/make-error 500 "Unable to request the database."))))
+  (let [errors (valid/check {:data email :function valid/xemail-address? :dataname "email" :required true})]
+      (if errors (utils/make-error 400 errors)
+        (try 
+          (if (email-in-db? @db/db email)
+            (utils/make-error 423 {:email email :available false})
+            (response {:email email :available true}))
+          (catch Exception e (utils/make-error 500 "Unable to request the database."))))))
       
 (defn ^:private refresh-token
   "insert a token for a given id and return the token string"
