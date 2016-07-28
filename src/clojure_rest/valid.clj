@@ -1,5 +1,36 @@
 (ns clojure-rest.valid)
 
+(defn check
+  "Check if a value is correct or nil if required is
+   false and return an error string message"
+  [{:keys [data function dataname required] :or {dataname "UNKNOW" required false}}]
+  (if data
+    (function data)
+    (if required
+      (str "Missing value : " dataname ".")
+      nil)))
+
+(defn check-all
+  "check all the values passed in parameter and return an error string"
+  [& args]
+    (let [wrong-entries (reduce #(let [ret (check %2)] (if ret (conj %1 ret))) [] args)]
+      (if (empty? wrong-entries)
+        []
+        (clojure.string/join "\n" wrong-entries))))
+      
+(defn xemail-address?
+  "Return string error if the email address is not valid, based on RFC 2822."
+  [email]
+  (if (string? email)
+	  (let [re (str "(?i)[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
+					"(?:\\.[a-z0-9!#$%&'*+/=?" "^_`{|}~-]+)*"
+					"@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+"
+					"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")]
+      (if (boolean (re-matches (re-pattern re) email))
+        nil
+        "email is not RFC 2822 compliant."))
+    "email have to be a string."))
+
 (defn pic-file? 
   [x]
   (if (nil? x)

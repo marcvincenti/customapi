@@ -8,6 +8,22 @@
             [clj-http.client :as client]
             [ring.util.response :refer [response]]
             [clojure.set :refer [rename-keys]]))
+      
+(defn test
+  []
+  {:body 
+    (valid/check-all 
+      
+        {:data "vincenq@df.com"
+         :function valid/xemail-address? 
+         :dataname "email" 
+         :required true}
+         
+         {:data nil
+         :function valid/xemail-address? 
+         :dataname "email" 
+         :required false}
+      )})
             
 (defn user-from-token
   "return a user from a given token or nil"
