@@ -216,14 +216,17 @@
 (defn ^:private auth-connect
   "Register the user in database or update his profile"
   [user]
-    (let [in-db-user (first (jdbc/query @db/db
-                        ["SELECT *
-                         FROM users
-                         WHERE email ilike ?
-                         LIMIT 1" (:email user)]))]
-      (if in-db-user
-        (return-private-profile (assoc in-db-user :access_token (refresh-token @db/db (:id in-db-user))))
-        (register! (rename-keys user {:name :username})))))
+    (try 
+      (jdbc/with-db-transaction [t-con @db/db]
+        (let [in-db-user (first (jdbc/query t-con
+                            ["SELECT *
+                             FROM users
+                             WHERE email ilike ?
+                             LIMIT 1" (:email user)]))]
+          (if in-db-user
+            (return-private-profile (assoc in-db-user :access_token (refresh-token t-con (:id in-db-user))))
+            (register! (rename-keys user {:name :username})))))
+      (catch Exception e (utils/make-error 500 "Unable to request the database."))))
 
 (defn auth-google
   "Authenticate a user with google access token"
