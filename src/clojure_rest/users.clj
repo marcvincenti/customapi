@@ -119,7 +119,7 @@
 (defn update!
   "Update a user in database"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
-  ([{:keys [username email picture gender oldpassword newpassword] :as user} id-user & [provider]]
+  ([{:keys [username email picture gender oldpassword newpassword] :as user} id-user]
     (try 
       (jdbc/with-db-transaction [t-con @db/db]
         (let [id-mail (email-in-db? t-con email)
@@ -149,9 +149,7 @@
                               :picture picture
                               :password password
                               :gender gender}) ["id = ?" id-user]))]
-              (-> (if provider 
-                    (assoc user :access_token (refresh-token t-con id-user)) 
-                    (dissoc user :access_token))
+              (-> (dissoc user :access_token)
                   (conj (when picture [:picture picture]) (when newpassword [:passwordUpdate (if password "true" "false")]))
                   (return-private-profile :passwordUpdate)))
             (update!))))
@@ -217,12 +215,15 @@
 
 (defn ^:private auth-connect
   "Register the user in database or update his profile"
-  [user provider]
-    (let [formatted-user (rename-keys user {:name :username})
-          id-user (email-in-db? @db/db (:email formatted-user))]
-      (if id-user
-        (update! formatted-user id-user provider)
-        (register! formatted-user))))
+  [user]
+    (let [in-db-user (first (jdbc/query @db/db
+                        ["SELECT *
+                         FROM users
+                         WHERE email ilike ?
+                         LIMIT 1" (:email user)]))]
+      (if in-db-user
+        (return-private-profile (assoc in-db-user :access_token (refresh-token @db/db (:id in-db-user))))
+        (register! (rename-keys user {:name :username})))))
 
 (defn auth-google
   "Authenticate a user with google access token"
@@ -230,7 +231,7 @@
   (try
     (let [req (client/get "https://www.googleapis.com/oauth2/v1/userinfo" 
                 {:query-params {"alt" "json" "access_token" token} :as :json-strict})]
-      (auth-connect (:body req) "google"))
+      (auth-connect (:body req)))
     (catch Exception e (utils/make-error 409 "Bad Google token"))))
       
 (defn auth-facebook
@@ -241,5 +242,5 @@
                 {:query-params {"fields" "name,email,gender,last_name,first_name,picture"
                  "access_token" token} :as :json-strict})
           picture (:url (:data (:picture (:body req))))]
-      (auth-connect (assoc (:body req) :picture picture) "facebook"))
+      (auth-connect (assoc (:body req) :picture picture)))
     (catch Exception e (utils/make-error 409 "Bad Facebook token"))))
