@@ -1,19 +1,28 @@
 (ns clojure-rest.valid)
 
-(defn check
+(defn ^:private run-checks
+  "run the multiples checks to do, data is not nil and func is a function or a list of functions"
+  [func data]
+    (if (vector? func)
+      (case (first func)
+        :or "or isn't implemented yet" ;TODO
+        :and (clojure.string/join "\n" (reduce #(let [ret (run-checks %2 data)] (if ret (conj %1 ret))) [] (drop 1 func))))
+      (func data)))
+
+(defn ^:private init-check
   "Check if a value is correct or nil if required is
    false and return an error string message"
   [{:keys [data function dataname required] :or {dataname "UNKNOW" required false}}]
   (if data
-    (function data)
+    (run-checks function data)
     (if required
       (str "Missing required value : \"" dataname "\".")
       nil)))
 
-(defn check-all
+(defn check
   "check all the values passed in parameter and return an error string"
   [& args]
-    (let [wrong-entries (reduce #(let [ret (check %2)] (if ret (conj %1 ret))) [] args)]
+    (let [wrong-entries (reduce #(let [ret (init-check %2)] (if ret (conj %1 ret))) [] args)]
       (if (empty? wrong-entries)
         nil
         (clojure.string/join "\n" wrong-entries))))
@@ -29,6 +38,13 @@
       (if (boolean (re-matches (re-pattern re) email))
         nil
         "\"email\" is not RFC 2822 compliant."))
+    "\"email\" have to be a string."))
+    
+(defn xpassword?
+  "Return string error if the password isn't a string"
+  [pwd]
+  (if (string? pwd)
+	  nil
     "\"email\" have to be a string."))
     
 (defn xusername?

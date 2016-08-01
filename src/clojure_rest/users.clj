@@ -56,17 +56,39 @@
           (utils/make-error 423 {:username username :available false})
           (response {:username username :available true}))
         (catch Exception e (utils/make-error 500 "Unable to request the database."))))))
+        
+(defn xabsent-username?
+  "Return string error if the username is already in db."
+  [uname]
+  (if (empty? (jdbc/query @db/db
+            ["SELECT id
+             FROM users
+             WHERE username ilike ?
+             LIMIT 1" uname]))
+    nil
+    "This username is already used."))
       
 (defn test-email!
   "Check if the email is already taken and send back a response to the client"
   [email]
   (let [errors (valid/check {:data email :function valid/xemail-address? :dataname "email" :required true})]
-      (if errors (utils/make-error 400 errors)
-        (try 
-          (if (email-in-db? @db/db email)
-            (utils/make-error 423 {:email email :available false})
-            (response {:email email :available true}))
-          (catch Exception e (utils/make-error 500 "Unable to request the database."))))))
+    (if errors (utils/make-error 400 errors)
+      (try 
+        (if (email-in-db? @db/db email)
+          (utils/make-error 423 {:email email :available false})
+          (response {:email email :available true}))
+        (catch Exception e (utils/make-error 500 "Unable to request the database."))))))
+        
+(defn xabsent-email?
+  "Return string error if the email is already in db."
+  [email]
+  (if (empty? (jdbc/query @db/db
+            ["SELECT id
+             FROM users
+             WHERE email ilike ?
+             LIMIT 1" email]))
+    nil
+    "This email address is already used."))
       
 (defn ^:private refresh-token
   "insert a token for a given id and return the token string"
@@ -92,29 +114,34 @@
 
 (defn register!
   "Register a user in database (at least: email / username / picture)"
-  ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
-  ([{:keys [username email picture gender password] :as user}]
-    (try 
-      (jdbc/with-db-transaction [t-con @db/db]
-        (if (and (and (valid/email-address? email) (not (email-in-db? t-con email)))
-                 (and (valid/username? username) (not (username-in-db? t-con username)))
-                 (or (nil? gender) (valid/gender? gender)))
-          (let [salt (db-utils/generate-salt) 
-                hashedpassword (db-utils/pbkdf2 password salt)
-                ret (first 
-                      (jdbc/insert! t-con :users
-                        {:email (clojure.string/lower-case email)
-                         :username username
-                         :picture (pic/return-uri picture)
-                         :gender gender
-                         :salt salt
-                         :password hashedpassword}))
-                     ]
-                (-> ret
-                    (assoc :access_token (refresh-token t-con (:id ret))) 
-                    return-private-profile))
-            (register!)))
-          (catch Exception e (utils/make-error 500 "Unable to insert this user in database")))))
+  [{:keys [username email picture gender password] :as user}]
+  (let [errors (valid/check {:data email :function [:and valid/xemail-address? xabsent-email?] :dataname "email" :required true}
+                            {:data username :function [:and valid/xusername? xabsent-username?] :dataname "username" :required true}
+                            {:data password :function valid/xpassword?}
+                           ; {:data picture :function valid/xpic?}
+                            {:data gender :function valid/xgender?}
+                            )]
+    (if (-> errors empty? not) (utils/make-error 400 errors)
+      (try 
+        (jdbc/with-db-transaction [t-con @db/db]
+          (if (and (and (valid/email-address? email) (not (email-in-db? t-con email)))
+                   (and (valid/username? username) (not (username-in-db? t-con username)))
+                   (or (nil? gender) (valid/gender? gender)))
+            (let [salt (db-utils/generate-salt) 
+                  hashedpassword (db-utils/pbkdf2 password salt)
+                  ret (first 
+                        (jdbc/insert! t-con :users
+                          {:email (clojure.string/lower-case email)
+                           :username username
+                           :picture (pic/return-uri picture)
+                           :gender gender
+                           :salt salt
+                           :password hashedpassword}))
+                       ]
+                  (-> ret
+                      (assoc :access_token (refresh-token t-con (:id ret))) 
+                      return-private-profile))))
+            (catch Exception e (utils/make-error 500 "Unable to insert this user in database"))))))
 
 (defn update!
   "Update a user in database"
