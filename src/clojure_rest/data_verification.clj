@@ -1,31 +1,33 @@
-(ns clojure-rest.valid)
+(ns clojure-rest.data-verification)
 
 (defn ^:private run-checks
   "run the multiples checks to do, data is not nil and func is a function or a list of functions"
   [func data]
     (if (vector? func)
-      (case (first func)
-        :or "or isn't implemented yet" ;TODO
-        :and (clojure.string/join "\n" (reduce #(let [ret (run-checks %2 data)] (if ret (conj %1 ret))) [] (drop 1 func))))
+      (let [seq-errors (reduce #(conj %1 (run-checks %2 data)) [] (rest func))]
+        (case (first func)
+          :or (when (not-any? nil? seq-errors) (first seq-errors))
+          :and (let [seq-errors-only (remove nil? seq-errors)]
+                  (when-not (empty? seq-errors-only) (clojure.string/join "\n" seq-errors-only)))))
       (func data)))
 
-(defn ^:private init-check
-  "Check if a value is correct or nil if required is
-   false and return an error string message"
-  [{:keys [data function dataname required] :or {dataname "UNKNOW" required false}}]
-  (if data
-    (run-checks function data)
-    (if required
-      (str "Missing required value : \"" dataname "\".")
-      nil)))
-
 (defn check
-  "check all the values passed in parameter and return an error string"
+  "check all the values passed in parameter with run-checks and return a concatened error string"
   [& args]
-    (let [wrong-entries (reduce #(let [ret (init-check %2)] (if ret (conj %1 ret))) [] args)]
-      (if (empty? wrong-entries)
-        nil
+    (let [wrong-entries 
+      (reduce #(let [{:keys [data function dataname required] 
+                        :or {dataname "UNKNOW" required false}} %2
+                      ret (if data
+                            (run-checks function data)
+                            (when required
+                              (str "Missing required value : \"" dataname "\".")))]
+                  (if ret (conj %1 ret))) [] args)]
+      (when-not (empty? wrong-entries)
         (clojure.string/join "\n" wrong-entries))))
+      
+(defn xstring?
+  [x]
+  (when-not (string? x) "Not a string."))      
       
 (defn xemail-address?
   "Return string error if the email address is not valid, based on RFC 2822."
@@ -35,16 +37,14 @@
 					"(?:\\.[a-z0-9!#$%&'*+/=?" "^_`{|}~-]+)*"
 					"@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+"
 					"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")]
-      (if (boolean (re-matches (re-pattern re) email))
-        nil
+      (when-not (boolean (re-matches (re-pattern re) email))
         "\"email\" is not RFC 2822 compliant."))
     "\"email\" have to be a string."))
     
 (defn xpassword?
   "Return string error if the password isn't a string"
   [pwd]
-  (if (string? pwd)
-	  nil
+  (when-not (string? pwd)
     "\"email\" have to be a string."))
     
 (defn xusername?
@@ -61,8 +61,7 @@
                   "ŔŘŖŚŜŠŞȘṢẞŤŢṬŦÞÚÙÛÜǓŬŪŨŰŮŲỤƯẂẀŴẄǷÝỲŶŸ"
                   "ȲỸƳŹŻŽẒŕřŗſśŝšşșṣßťţṭŧþúùûüǔŭūũűůųụưẃ"
                   "ẁŵẅƿýỳŷÿȳỹƴźżžẓ0-9]{4,32}")]
-      (if (boolean (re-matches (re-pattern re) uname))
-        nil
+      (when-not (boolean (re-matches (re-pattern re) uname))
         "The \"username\" can't contain special characters and has to be between 4 and 32 characters."))
     "\"username\" have to be a string."))
     
@@ -70,14 +69,12 @@
   "Return a string error if picture uri isn't RFC 2396 compliant."
   [uri]
   (let [re (str "(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*\\.(?:jpg|jpeg|png))(?:\\?([^#]*))?(?:#(.*))?")]
-    (if (boolean (re-matches (re-pattern re) uri))
-      nil
+    (when-not (boolean (re-matches (re-pattern re) uri))
       "\"picture\"'s URI is not RFC 2396 compliant.")))
 
 (defn xpic-file? 
   [{:keys [content-type]}]
-  (if (or (= content-type "image/jpeg") (= content-type "image/png"))
-    nil
+  (when-not (or (= content-type "image/jpeg") (= content-type "image/png"))
     "The \"picture\" doesn't seem to be a jpeg or a png or an uri."))
     
 (defn xpic?

@@ -10,4 +10,4 @@
               wrap-multipart-params
               wrap-params
               (wrap-json-response {:pretty true})
-			  wps/allow-cross-origin))
+              wps/allow-cross-origin))

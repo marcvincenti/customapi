@@ -3,7 +3,7 @@
             [clojure-rest.utils :as utils]
             [clojure-rest.db-utils :as db-utils]
             [clojure-rest.db :as db]
-            [clojure-rest.valid :as valid]
+            [clojure-rest.data-verification :as verif]
             [clojure-rest.pictures :as pic]
             [clj-http.client :as client]
             [ring.util.response :refer [response]]
@@ -49,7 +49,7 @@
 (defn test-username!
   "Check if the username is already taken and send back a response to the client"
   [username]
-  (let [errors (valid/check {:data username :function valid/xusername? :dataname "username" :required true})]
+  (let [errors (verif/check {:data username :function verif/xusername? :dataname "username" :required true})]
     (if errors (utils/make-error 400 errors)
       (try 
         (if (username-in-db? @db/db username)
@@ -71,7 +71,7 @@
 (defn test-email!
   "Check if the email is already taken and send back a response to the client"
   [email]
-  (let [errors (valid/check {:data email :function valid/xemail-address? :dataname "email" :required true})]
+  (let [errors (verif/check {:data email :function verif/xemail-address? :dataname "email" :required true})]
     (if errors (utils/make-error 400 errors)
       (try 
         (if (email-in-db? @db/db email)
@@ -115,18 +115,17 @@
 (defn register!
   "Register a user in database (at least: email / username / picture)"
   [{:keys [username email picture gender password] :as user}]
-  (let [errors (valid/check {:data email :function [:and valid/xemail-address? xabsent-email?] :dataname "email" :required true}
-                            {:data username :function [:and valid/xusername? xabsent-username?] :dataname "username" :required true}
-                            {:data password :function valid/xpassword?}
-                           ; {:data picture :function valid/xpic?}
-                            {:data gender :function valid/xgender?}
-                            )]
+  (let [errors (verif/check {:data email :function [:and verif/xemail-address? xabsent-email?] :dataname "email" :required true}
+                            {:data username :function [:and verif/xusername? xabsent-username?] :dataname "username" :required true}
+                            {:data password :function verif/xpassword?}
+                            {:data picture :function verif/xpic?}
+                            {:data gender :function verif/xgender?})]
     (if (-> errors empty? not) (utils/make-error 400 errors)
       (try 
         (jdbc/with-db-transaction [t-con @db/db]
-          (if (and (and (valid/email-address? email) (not (email-in-db? t-con email)))
-                   (and (valid/username? username) (not (username-in-db? t-con username)))
-                   (or (nil? gender) (valid/gender? gender)))
+          (if (and (and (verif/email-address? email) (not (email-in-db? t-con email)))
+                   (and (verif/username? username) (not (username-in-db? t-con username)))
+                   (or (nil? gender) (verif/gender? gender)))
             (let [salt (db-utils/generate-salt) 
                   hashedpassword (db-utils/pbkdf2 password salt)
                   ret (first 
@@ -151,11 +150,11 @@
       (jdbc/with-db-transaction [t-con @db/db]
         (let [id-mail (email-in-db? t-con email)
               id-username (username-in-db? t-con username)]
-          (if (and (or (nil? email) (and (valid/email-address? email) 
+          (if (and (or (nil? email) (and (verif/email-address? email) 
                                                  (or (not id-mail) (= id-user id-mail))))
-                   (or (nil? username) (and (valid/username? username) 
+                   (or (nil? username) (and (verif/username? username) 
                                                     (or (not id-username) (= id-user id-username))))
-                   (or (nil? gender) (valid/gender? gender))
+                   (or (nil? gender) (verif/gender? gender))
                    (or (nil? newpassword) (and (string? newpassword) (not-empty newpassword))))
             (let [picture (pic/return-uri picture)
                   user-pass (first
@@ -186,8 +185,8 @@
   "Log the user and return his informations"
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
   ([{:keys [email password] :as user}]
-    (if (and (or (valid/email-address? email)
-                 (valid/username? email))
+    (if (and (or (verif/email-address? email)
+                 (verif/username? email))
              (string? password))
       (try 
         (jdbc/with-db-transaction [t-con @db/db]

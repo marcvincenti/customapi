@@ -3,7 +3,7 @@
             [clojure.java.io :refer [input-stream]]
             [clojure-rest.db :as db]
             [clojure-rest.utils :as utils]
-            [clojure-rest.valid :as valid])
+            [clojure-rest.data-verification :as verif])
   (:import java.io.ByteArrayOutputStream
            javax.imageio.ImageIO
            java.awt.image.BufferedImage))
@@ -43,8 +43,8 @@
 (defn return-uri
   "take an uri or a file (png/jpg) and return an uri"
   [picture]
-  (if (or (nil? picture) (valid/image-uri? picture))
+  (if (or (nil? picture) (verif/image-uri? picture))
     picture
-    (if (valid/pic-file? picture)
+    (if (verif/pic-file? picture)
       (save-pic picture "users")
       nil)))
