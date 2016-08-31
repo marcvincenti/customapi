@@ -9,26 +9,30 @@
           :or (when (not-any? nil? seq-errors) (first seq-errors))
           :and (let [seq-errors-only (remove nil? seq-errors)]
                   (when-not (empty? seq-errors-only) (clojure.string/join "\n" seq-errors-only)))))
-      (func data)))
+      (-> data func)))
 
 (defn check
   "check all the values passed in parameter with run-checks and return a concatened error string"
   [& args]
     (let [wrong-entries 
-      (reduce #(let [{:keys [data function dataname required] 
+      (remove nil? 
+        (reduce #(let [{:keys [data function dataname required] 
                         :or {dataname "UNKNOW" required false}} %2
                       ret (if data
                             (run-checks function data)
                             (when required
                               (str "Missing required value : \"" dataname "\".")))]
-                  (if ret (conj %1 ret))) [] args)]
+                          (conj %1 ret)) [] args))]
       (when-not (empty? wrong-entries)
         (clojure.string/join "\n" wrong-entries))))
       
 (defn xstring?
-  [x]
-  (when-not (string? x) "Not a string."))      
-      
+  [x & {:keys [errmsg regex] :or {errmsg "Not a string."}}]
+  (when (or (not (string? x))
+          (and regex
+               (not (boolean (re-matches (re-pattern regex) x))))) 
+    errmsg))
+
 (defn xemail-address?
   "Return string error if the email address is not valid, based on RFC 2822."
   [email]
