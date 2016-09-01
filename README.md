@@ -8,15 +8,14 @@ web: lein ring server-headless
 
 ### Configuration
 This is using a PostgreSQL database and an [Amazon AWS](https://aws.amazon.com/fr/console/) account.  
-Because of amazon bucket policy, you have to set your buckets names (you can just add your corporation name before each bucket name for example) _"src/clojure_rest/db.clj"_ at the **buckets** definition
+ + Use environment variables with the following names : DATABASE_USER, DATABASE_PASSWORD and DATABASE_SUBNAME.  
+ 
+Because of amazon bucket policy, you have to set your buckets names
+(you can just add your corporation name before each bucket name for example) 
+_"src/clojure_rest/db.clj"_ at the **buckets** definition and 
+you have to configure an amazon connection with [IAM](https://console.aws.amazon.com/iam/home).  
+ + Use environment variables with the following names : AMZ_ACCESS, AMZ_SECRET and AMZ_ENDPOINT. 
 
-#### Tests
- + Use environment variables with the following names : DATABASE_USER, DATABASE_PASSWORD and DATABASE_SUBNAME.
- + There is also an amazon connection, you have to configure an amazon connection with [IAM](https://console.aws.amazon.com/iam/home) 
-    + and then put bucket name in _"src/clojure_rest/db.clj"_ in bucket and set this environment variables : AMZ_ACCESS, AMZ_SECRET and AMZ_ENDPOINT. 
-    
-#### Production
-This part will come later. 
 
 # Usage 
 

@@ -10,16 +10,22 @@
 (def bucket "clojure-api-users")
 
 (def ^:private db-specs
-  {:user (System/getenv "DATABASE_USER")
-  :password (System/getenv "DATABASE_PASSWORD")
-  :subname (System/getenv "DATABASE_SUBNAME")
+  {:user (or (System/getenv "DATABASE_USER")
+              "root")
+  :password (or (System/getenv "DATABASE_PASSWORD")
+                "toortoor")
+  :subname (or (System/getenv "DATABASE_SUBNAME") 
+                "//another.ctcyur2o6hny.eu-west-1.rds.amazonaws.com:5432/postgres")
   :classname "org.postgresql.Driver"
   :subprotocol "postgresql"})
           
 (def ^:private amz-specs
-  {:access-key (System/getenv "AMZ_ACCESS")
-  :secret-key (System/getenv "AMZ_SECRET")
-  :endpoint   (System/getenv "AMZ_ENDPOINT")})
+  {:access-key (or (System/getenv "AMZ_ACCESS")
+                    "AKIAIKZWOA4I5Y43GDOA")
+  :secret-key (or (System/getenv "AMZ_SECRET")
+                  "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")
+  :endpoint   (or (System/getenv "AMZ_ENDPOINT")
+                  "eu-west-1")})
 
 (defn ^:private create-user-db [profile]
   (if-not (table-exist? "users" profile)
