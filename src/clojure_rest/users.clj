@@ -12,7 +12,7 @@
 (defn user-from-token
   "return a user from a given token or nil"
   [token]
-  (:rel_user (first (jdbc/query @db/db
+  (:rel_user (first (jdbc/query
             ["SELECT rel_user
              FROM tokens
              WHERE access_token = ? AND expire > ?
@@ -30,8 +30,8 @@
     
 (defn ^:private email-in-db?
   "return the id from the email or nil if mail not present"
-  [conn email]
-  (:id (first (jdbc/query conn
+  [email]
+  (:id (first (jdbc/query
             ["SELECT id
              FROM users
              WHERE email ilike ?
@@ -39,8 +39,8 @@
 
 (defn ^:private username-in-db?
   "return the id from the username or nil if mail not present"
-  [conn username]
-  (:id (first (jdbc/query conn
+  [username]
+  (:id (first (jdbc/query
             ["SELECT id
              FROM users
              WHERE username ilike ?
@@ -52,7 +52,7 @@
   (let [errors (verif/check {:data username :function verif/xusername? :dataname "username" :required true})]
     (if errors (utils/make-error 400 errors)
       (try 
-        (if (username-in-db? @db/db username)
+        (if (username-in-db? username)
           (utils/make-error 423 {:username username :available false})
           (response {:username username :available true}))
         (catch Exception e (utils/make-error 500 "Unable to request the database."))))))
@@ -60,7 +60,7 @@
 (defn xabsent-username?
   "Return string error if the username is already in db."
   [uname]
-  (if (empty? (jdbc/query @db/db
+  (if (empty? (jdbc/query
             ["SELECT id
              FROM users
              WHERE username ilike ?
@@ -74,7 +74,7 @@
   (let [errors (verif/check {:data email :function verif/xemail-address? :dataname "email" :required true})]
     (if errors (utils/make-error 400 errors)
       (try 
-        (if (email-in-db? @db/db email)
+        (if (email-in-db? email)
           (utils/make-error 423 {:email email :available false})
           (response {:email email :available true}))
         (catch Exception e (utils/make-error 500 "Unable to request the database."))))))
@@ -82,7 +82,7 @@
 (defn xabsent-email?
   "Return string error if the email is already in db."
   [email]
-  (if (empty? (jdbc/query @db/db
+  (if (empty? (jdbc/query
             ["SELECT id
              FROM users
              WHERE email ilike ?
@@ -92,10 +92,10 @@
       
 (defn ^:private refresh-token
   "insert a token for a given id and return the token string"
-  [conn id-user]
+  [id-user]
   (let [access-token (db-utils/generate-token-map)]
     (do
-      (db-utils/update-or-insert! conn :tokens 
+      (db-utils/update-or-insert! :tokens 
         (assoc access-token :rel_user id-user) ["rel_user = ?" id-user])
       (:access_token access-token))))
       
@@ -105,7 +105,7 @@
     (try 
       (return-private-profile
         (first 
-          (jdbc/query @db/db
+          (jdbc/query
             ["SELECT *
              FROM users
              WHERE id = ? 
@@ -122,24 +122,23 @@
                             {:data gender :function verif/xgender?})]
     (if (-> errors empty? not) (utils/make-error 400 errors)
       (try 
-        (jdbc/with-db-transaction [t-con @db/db]
-          (if (and (and (verif/email-address? email) (not (email-in-db? t-con email)))
-                   (and (verif/username? username) (not (username-in-db? t-con username)))
-                   (or (nil? gender) (verif/gender? gender)))
-            (let [salt (db-utils/generate-salt) 
-                  hashedpassword (db-utils/pbkdf2 password salt)
-                  ret (first 
-                        (jdbc/insert! t-con :users
-                          {:email (clojure.string/lower-case email)
-                           :username username
-                           :picture (pic/return-uri picture)
-                           :gender gender
-                           :salt salt
-                           :password hashedpassword}))
-                       ]
-                  (-> ret
-                      (assoc :access_token (refresh-token t-con (:id ret))) 
-                      return-private-profile))))
+        (if (and (and (verif/email-address? email) (not (email-in-db? email)))
+                 (and (verif/username? username) (not (username-in-db? username)))
+                 (or (nil? gender) (verif/gender? gender)))
+          (let [salt (db-utils/generate-salt) 
+                hashedpassword (db-utils/pbkdf2 password salt)
+                ret (first 
+                      (jdbc/insert! :users
+                        {:email (clojure.string/lower-case email)
+                         :username username
+                         :picture (pic/return-uri picture)
+                         :gender gender
+                         :salt salt
+                         :password hashedpassword}))
+                     ]
+                (-> ret
+                    (assoc :access_token (refresh-token (:id ret))) 
+                    return-private-profile)))
             (catch Exception e (utils/make-error 500 "Unable to insert this user in database"))))))
 
 (defn update!
@@ -147,38 +146,37 @@
   ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
   ([{:keys [username email picture gender oldpassword newpassword] :as user} id-user]
     (try 
-      (jdbc/with-db-transaction [t-con @db/db]
-        (let [id-mail (email-in-db? t-con email)
-              id-username (username-in-db? t-con username)]
-          (if (and (or (nil? email) (and (verif/email-address? email) 
-                                                 (or (not id-mail) (= id-user id-mail))))
-                   (or (nil? username) (and (verif/username? username) 
-                                                    (or (not id-username) (= id-user id-username))))
-                   (or (nil? gender) (verif/gender? gender))
-                   (or (nil? newpassword) (and (string? newpassword) (not-empty newpassword))))
-            (let [picture (pic/return-uri picture)
-                  user-pass (first
-                              (jdbc/query t-con
-                                ["SELECT password, salt
-                                 FROM users
-                                 WHERE id = ?
-                                 LIMIT 1" id-user]))
-                  password (if (= (db-utils/pbkdf2 oldpassword (:salt user-pass)) (:password user-pass))
-                                (db-utils/pbkdf2 newpassword (:salt user-pass))
-                                nil)
-                  ret (first 
-                        (jdbc/update! t-con :users 
-                            ;we avoid setting variables to null with this reduction
-                            (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
-                             {:email (clojure.string/lower-case email)
-                              :username username
-                              :picture picture
-                              :password password
-                              :gender gender}) ["id = ?" id-user]))]
-              (-> (dissoc user :access_token)
-                  (conj (when picture [:picture picture]) (when newpassword [:passwordUpdate (if password "true" "false")]))
-                  (return-private-profile :passwordUpdate)))
-            (update!))))
+      (let [id-mail (email-in-db? email)
+            id-username (username-in-db? username)]
+        (if (and (or (nil? email) (and (verif/email-address? email) 
+                                               (or (not id-mail) (= id-user id-mail))))
+                 (or (nil? username) (and (verif/username? username) 
+                                                  (or (not id-username) (= id-user id-username))))
+                 (or (nil? gender) (verif/gender? gender))
+                 (or (nil? newpassword) (and (string? newpassword) (not-empty newpassword))))
+          (let [picture (pic/return-uri picture)
+                user-pass (first
+                            (jdbc/query
+                              ["SELECT password, salt
+                               FROM users
+                               WHERE id = ?
+                               LIMIT 1" id-user]))
+                password (if (= (db-utils/pbkdf2 oldpassword (:salt user-pass)) (:password user-pass))
+                              (db-utils/pbkdf2 newpassword (:salt user-pass))
+                              nil)
+                ret (first 
+                      (jdbc/update! :users 
+                          ;we avoid setting variables to null with this reduction
+                          (reduce-kv (fn [m k v] (if (nil? v) m (assoc m k v))) {}
+                           {:email (clojure.string/lower-case email)
+                            :username username
+                            :picture picture
+                            :password password
+                            :gender gender}) ["id = ?" id-user]))]
+            (-> (dissoc user :access_token)
+                (conj (when picture [:picture picture]) (when newpassword [:passwordUpdate (if password "true" "false")]))
+                (return-private-profile :passwordUpdate)))
+          (update!)))
         (catch Exception e (utils/make-error 500 "Unable to insert this user in database")))))
       
 (defn login!
@@ -189,19 +187,18 @@
                  (verif/username? email))
              (string? password))
       (try 
-        (jdbc/with-db-transaction [t-con @db/db]
-          (let [ret (first
-                      (jdbc/query t-con
-                        ["SELECT *
-                         FROM users
-                         WHERE email ilike ? OR username ilike ?
-                         LIMIT 1" email email]))
-                hashedpassword (db-utils/pbkdf2 password (:salt ret))]
-              (if (= hashedpassword (:password ret))      
-                (-> ret
-                    (assoc :access_token (refresh-token t-con (:id ret))) 
-                    return-private-profile)
-                (utils/make-error 401 "Wrong credentials."))))
+        (let [ret (first
+                    (jdbc/query
+                      ["SELECT *
+                       FROM users
+                       WHERE email ilike ? OR username ilike ?
+                       LIMIT 1" email email]))
+              hashedpassword (db-utils/pbkdf2 password (:salt ret))]
+            (if (= hashedpassword (:password ret))      
+              (-> ret
+                  (assoc :access_token (refresh-token (:id ret))) 
+                  return-private-profile)
+              (utils/make-error 401 "Wrong credentials.")))
         (catch Exception e (utils/make-error 500 "Unable to log in.")))
       (login!))))
       
@@ -210,7 +207,7 @@
   [user-id]
     (try 
       (do
-        (jdbc/query @db/db
+        (jdbc/query
           ["DELETE FROM tokens
            WHERE rel_user = ?
            RETURNING rel_user" user-id])
@@ -221,37 +218,35 @@
   "remove the user from the database, require user password"
   [user-id user-infos]
   (try 
-    (jdbc/with-db-transaction [t-con @db/db]
-      (let [ret (first
-                  (jdbc/query t-con
-                    ["SELECT *
-                     FROM users
-                     WHERE id = ?
-                     LIMIT 1" user-id]))
-            hashedpassword (db-utils/pbkdf2 (:password user-infos) (:salt ret))]
-          (if (= hashedpassword (:password ret))
-            (do
-              (jdbc/query t-con
-                ["DELETE FROM users
-                 WHERE id = ?
-                 RETURNING id" user-id])
-              {:body "Success."})
-            (utils/make-error 500 "Wrong password."))))
+    (let [ret (first
+                (jdbc/query
+                  ["SELECT *
+                   FROM users
+                   WHERE id = ?
+                   LIMIT 1" user-id]))
+          hashedpassword (db-utils/pbkdf2 (:password user-infos) (:salt ret))]
+        (if (= hashedpassword (:password ret))
+          (do
+            (jdbc/query
+              ["DELETE FROM users
+               WHERE id = ?
+               RETURNING id" user-id])
+            {:body "Success."})
+          (utils/make-error 500 "Wrong password.")))
     (catch Exception e (utils/make-error 500 "Unable to request the database."))))
 
 (defn ^:private auth-connect
   "Register the user in database or update his profile"
   [user]
     (try 
-      (jdbc/with-db-transaction [t-con @db/db]
-        (let [in-db-user (first (jdbc/query t-con
-                            ["SELECT *
-                             FROM users
-                             WHERE email ilike ?
-                             LIMIT 1" (:email user)]))]
-          (if in-db-user
-            (return-private-profile (assoc in-db-user :access_token (refresh-token t-con (:id in-db-user))))
-            (register! (rename-keys user {:name :username})))))
+      (let [in-db-user (first (jdbc/query
+                          ["SELECT *
+                           FROM users
+                           WHERE email ilike ?
+                           LIMIT 1" (:email user)]))]
+        (if in-db-user
+          (return-private-profile (assoc in-db-user :access_token (refresh-token (:id in-db-user))))
+          (register! (rename-keys user {:name :username}))))
       (catch Exception e (utils/make-error 500 "Unable to request the database."))))
 
 (defn auth-google

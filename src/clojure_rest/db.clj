@@ -6,38 +6,20 @@
             [java-jdbc.ddl :as ddl]
             [amazonica.aws.s3 :as s3]
             [amazonica.core :refer [defcredential]]))
-
-(def db (atom nil))
-(def conn (atom nil))
-(def current-profile (atom nil))
-
-(def ^:private allowed-profiles #{:prod :test})
-
-(defn set-profile! [profile]
-  {:pre [(get allowed-profiles profile)]}
-  (reset! current-profile profile))
   
 (def bucket "clojure-api-users")
 
 (def ^:private db-specs
-  {:prod {:user (System/getenv "DATABASE_USER")
-          :password (System/getenv "DATABASE_PASSWORD")
-          :subname (System/getenv "DATABASE_SUBNAME")
-          }
-   :test {:user "root"
-          :password "toortoor"
-          :subname "//another.ctcyur2o6hny.eu-west-1.rds.amazonaws.com:5432/postgres"
-          }})
+  {:user (System/getenv "DATABASE_USER")
+  :password (System/getenv "DATABASE_PASSWORD")
+  :subname (System/getenv "DATABASE_SUBNAME")
+  :classname "org.postgresql.Driver"
+  :subprotocol "postgresql"})
           
-(def ^:private conn-specs
-  {:prod {:access-key (System/getenv "AMAZON_ACCESS")
-          :secret-key (System/getenv "AMAZON_KEY")
-          :endpoint (System/getenv "AMAZON_ENDPOINT")
-          }
-   :test {:access-key "AKIAIKZWOA4I5Y43GDOA"
-          :secret-key "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"
-          :endpoint   "eu-west-1"
-         }})
+(def ^:private amz-specs
+  {:access-key (System/getenv "AMZ_ACCESS")
+  :secret-key (System/getenv "AMZ_SECRET")
+  :endpoint   (System/getenv "AMZ_ENDPOINT")})
 
 (defn ^:private create-user-db [profile]
   (if-not (table-exist? "users" profile)
@@ -77,19 +59,11 @@
     (when-not (s3/does-bucket-exist bucket) 
       (s3/create-bucket bucket))))
             
-(defn init-db! [profile]
-  {:pre [(get allowed-profiles profile)]}
+(defn init! []
   (do 
     ;connect and build Postgres users database
-    (->> profile
-       (get db-specs)
-       (merge {:classname "org.postgresql.Driver"
-               :subprotocol "postgresql"})
+    (-> db-specs
        pool/make-datasource-spec
-       (reset! db)
        create-user-db)
-    ;connect to amazon
-    (->> profile
-       (get conn-specs)
-       (reset! conn)
-       amazon-setup)))
+    ;connect to amazon and create bucket
+    (amazon-setup amz-specs)))

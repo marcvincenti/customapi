@@ -1,4 +1,4 @@
-# Users clojure REST Api
+# My clojure REST Api
 You can run it :
  + locally with `lein ring server-headless <port>`
  + on [Heroku](https://www.heroku.com/) with the following Procfile : 
@@ -11,9 +11,9 @@ This is using a PostgreSQL database and an [Amazon AWS](https://aws.amazon.com/f
 Because of amazon bucket policy, you have to set your buckets names (you can just add your corporation name before each bucket name for example) _"src/clojure_rest/db.clj"_ at the **buckets** definition
 
 #### Tests
- + You have to create a Postgres database and put the credentials in _"src/clojure_rest/db.clj"_ in the **db-specs** definition.
+ + Use environment variables with the following names : DATABASE_USER, DATABASE_PASSWORD and DATABASE_SUBNAME.
  + There is also an amazon connection, you have to configure an amazon connection with [IAM](https://console.aws.amazon.com/iam/home) 
-    + and then put credentials in _"src/clojure_rest/db.clj"_ in the **conn-specs** definition. 
+    + and then put bucket name in _"src/clojure_rest/db.clj"_ in bucket and set this environment variables : AMZ_ACCESS, AMZ_SECRET and AMZ_ENDPOINT. 
     
 #### Production
 This part will come later. 

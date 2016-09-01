@@ -13,7 +13,7 @@
                  [crypto-random "1.2.0"]
                  [amazonica "0.3.67"]]
   :plugins [[lein-ring "0.9.7"]]
-  :ring {:init clojure-rest.server/init!
+  :ring {:init clojure-rest.db/init!
          :handler clojure-rest.handler/app}
   :profiles
   {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]

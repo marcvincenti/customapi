@@ -37,7 +37,7 @@
             :metadata {:content-type "image/png" 
                        :content-length (count (.toByteArray out))}
             :access-control-list {:grant-permission ["AllUsers" "Read"]}))
-         (str "https://s3-" (:endpoint @db/conn) ".amazonaws.com/" db/bucket "/" new-filename)
+         (str "https://s3-" (System/getenv "AMZ_ENDPOINT") ".amazonaws.com/" db/bucket "/" new-filename)
         (catch Exception e nil))))
 
 (defn return-uri
