@@ -43,8 +43,8 @@
 (defn return-uri
   "take an uri or a file (png/jpg) and return an uri"
   [picture]
-  (if (or (nil? picture) (verif/image-uri? picture))
-    picture
-    (if (verif/pic-file? picture)
-      (save-pic picture "users")
-      nil)))
+  (let [errors (verif/check {:data picture :function [:or verif/xpic-uri? verif/xpic-file?]})]
+    (if (-> errors empty? not) (utils/make-error 400 errors)
+      (if (string? picture)
+        picture
+        (save-pic picture "users")))))

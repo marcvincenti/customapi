@@ -33,8 +33,7 @@
       (ddl/create-table :users
         [:id :serial "PRIMARY KEY"]
         [:email "varchar(32)" "UNIQUE" "NOT NULL"]
-        [:username "varchar(32)" "NOT NULL"]
-        [:gender "varchar(6)"]
+        [:username "varchar(32)"]
         [:picture "VARCHAR(2083)"]
         [:salt "bytea"]
         [:password "VARCHAR(50)"])))

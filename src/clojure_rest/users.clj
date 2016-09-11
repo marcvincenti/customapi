@@ -21,12 +21,12 @@
 (defn ^:private return-public-profile
   "return a public user profile"
   [user]
-    (response (select-keys user [:username :picture :gender])))
+    (response (select-keys user [:username :picture])))
     
 (defn ^:private return-private-profile
   "return a private user profile"
   [user & [options]]
-    (response (select-keys user [:username :picture :gender :email :access_token options])))
+    (response (select-keys user [:username :picture :email :access_token options])))
     
 (defn ^:private email-in-db?
   "return the id from the email or nil if mail not present"
@@ -45,28 +45,6 @@
              FROM users
              WHERE username ilike ?
              LIMIT 1" username]))))
-             
-(defn test-username!
-  "Check if the username is already taken and send back a response to the client"
-  [username]
-  (let [errors (verif/check {:data username :function verif/xusername? :dataname "username" :required true})]
-    (if errors (utils/make-error 400 errors)
-      (try 
-        (if (username-in-db? username)
-          (utils/make-error 423 {:username username :available false})
-          (response {:username username :available true}))
-        (catch Exception e (utils/make-error 500 "Unable to request the database."))))))
-        
-(defn xabsent-username?
-  "Return string error if the username is already in db."
-  [uname]
-  (if (empty? (jdbc/query
-            ["SELECT id
-             FROM users
-             WHERE username ilike ?
-             LIMIT 1" uname]))
-    nil
-    "This username is already used."))
       
 (defn test-email!
   "Check if the email is already taken and send back a response to the client"
@@ -114,46 +92,41 @@
 
 (defn register!
   "Register a user in database (at least: email / username / picture)"
-  [{:keys [username email picture gender password] :as user}]
+  [{:keys [username email picture password] :as user}]
   (let [errors (verif/check {:data email :function [:and verif/xemail-address? xabsent-email?] :dataname "email" :required true}
-                            {:data username :function [:and verif/xusername? xabsent-username?] :dataname "username" :required true}
+                            {:data username :function verif/xusername?}
                             {:data password :function verif/xpassword?}
-                            {:data picture :function verif/xpic?}
-                            {:data gender :function verif/xgender?})]
+                            {:data picture :function [:or verif/xpic-uri? verif/xpic-file?]})]
     (if (-> errors empty? not) (utils/make-error 400 errors)
       (try 
-        (if (and (and (verif/email-address? email) (not (email-in-db? email)))
-                 (and (verif/username? username) (not (username-in-db? username)))
-                 (or (nil? gender) (verif/gender? gender)))
-          (let [salt (db-utils/generate-salt) 
-                hashedpassword (db-utils/pbkdf2 password salt)
-                ret (first 
-                      (jdbc/insert! :users
-                        {:email (clojure.string/lower-case email)
-                         :username username
-                         :picture (pic/return-uri picture)
-                         :gender gender
-                         :salt salt
-                         :password hashedpassword}))
-                     ]
-                (-> ret
-                    (assoc :access_token (refresh-token (:id ret))) 
-                    return-private-profile)))
+        (let [salt (db-utils/generate-salt) 
+              hashedpassword (db-utils/pbkdf2 password salt)
+              ret (first 
+                    (jdbc/insert! :users
+                      {:email (clojure.string/lower-case email)
+                       :username username
+                       :picture (pic/return-uri picture)
+                       :salt salt
+                       :password hashedpassword}))
+                   ]
+              (-> ret
+                  (assoc :access_token (refresh-token (:id ret))) 
+                  return-private-profile))
             (catch Exception e (utils/make-error 500 "Unable to insert this user in database"))))))
 
 (defn update!
   "Update a user in database"
-  ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
-  ([{:keys [username email picture gender oldpassword newpassword] :as user} id-user]
+  ([{:keys [username email picture oldpassword newpassword] :as user} id-user]
     (try 
-      (let [id-mail (email-in-db? email)
-            id-username (username-in-db? username)]
-        (if (and (or (nil? email) (and (verif/email-address? email) 
-                                               (or (not id-mail) (= id-user id-mail))))
-                 (or (nil? username) (and (verif/username? username) 
-                                                  (or (not id-username) (= id-user id-username))))
-                 (or (nil? gender) (verif/gender? gender))
-                 (or (nil? newpassword) (and (string? newpassword) (not-empty newpassword))))
+      (let [errors (verif/check {:data email :function verif/xemail-address?}
+                                {:data username :function verif/xusername?}
+                                {:data oldpassword :function verif/xpassword?}
+                                {:data newpassword :function verif/xpassword?}
+                                {:data picture :function [:or verif/xpic-uri? verif/xpic-file?]})
+            id-mail (email-in-db? email)]
+        (if (and (or (not (nil? email) (or (not id-mail) (= id-user id-mail))))
+                 (-> errors empty? not))
+          (utils/make-error 400 errors)
           (let [picture (pic/return-uri picture)
                 user-pass (first
                             (jdbc/query
@@ -171,36 +144,32 @@
                            {:email (clojure.string/lower-case email)
                             :username username
                             :picture picture
-                            :password password
-                            :gender gender}) ["id = ?" id-user]))]
+                            :password password}) ["id = ?" id-user]))]
             (-> (dissoc user :access_token)
                 (conj (when picture [:picture picture]) (when newpassword [:passwordUpdate (if password "true" "false")]))
-                (return-private-profile :passwordUpdate)))
-          (update!)))
+                (return-private-profile :passwordUpdate)))))
         (catch Exception e (utils/make-error 500 "Unable to insert this user in database")))))
       
 (defn login!
   "Log the user and return his informations"
-  ([] (utils/make-error 400 "Required parameters are missing or are invalid."))
   ([{:keys [email password] :as user}]
-    (if (and (or (verif/email-address? email)
-                 (verif/username? email))
-             (string? password))
-      (try 
-        (let [ret (first
-                    (jdbc/query
-                      ["SELECT *
-                       FROM users
-                       WHERE email ilike ? OR username ilike ?
-                       LIMIT 1" email email]))
-              hashedpassword (db-utils/pbkdf2 password (:salt ret))]
-            (if (= hashedpassword (:password ret))      
-              (-> ret
-                  (assoc :access_token (refresh-token (:id ret))) 
-                  return-private-profile)
-              (utils/make-error 401 "Wrong credentials.")))
-        (catch Exception e (utils/make-error 500 "Unable to log in.")))
-      (login!))))
+    (let [errors (verif/check {:data email :function verif/xemail-address? :dataname "email" :required true}
+                              {:data password :function verif/xpassword?})]
+      (if (-> errors empty? not) (utils/make-error 400 errors)
+        (try 
+          (let [ret (first
+                      (jdbc/query
+                        ["SELECT *
+                         FROM users
+                         WHERE email ilike ?
+                         LIMIT 1" email]))
+                hashedpassword (db-utils/pbkdf2 password (:salt ret))]
+              (if (= hashedpassword (:password ret))      
+                (-> ret
+                    (assoc :access_token (refresh-token (:id ret))) 
+                    return-private-profile)
+                (utils/make-error 401 "Wrong credentials.")))
+          (catch Exception e (utils/make-error 500 "Unable to log in.")))))))
       
 (defn logout!
   "remove the user token in database"
@@ -246,7 +215,7 @@
                            LIMIT 1" (:email user)]))]
         (if in-db-user
           (return-private-profile (assoc in-db-user :access_token (refresh-token (:id in-db-user))))
-          (register! (rename-keys user {:name :username}))))
+          (register! user)))
       (catch Exception e (utils/make-error 500 "Unable to request the database."))))
 
 (defn auth-google
@@ -255,7 +224,7 @@
   (try
     (let [req (client/get "https://www.googleapis.com/oauth2/v1/userinfo" 
                 {:query-params {"alt" "json" "access_token" token} :as :json-strict})]
-      (auth-connect (:body req)))
+      (auth-connect (rename-keys (:body req) {:given_name :username})))
     (catch Exception e (utils/make-error 409 "Bad Google token"))))
       
 (defn auth-facebook
@@ -263,8 +232,8 @@
   [token]
   (try
     (let [req (client/get "https://graph.facebook.com/v2.6/me" 
-                {:query-params {"fields" "name,email,gender,last_name,first_name,picture"
+                {:query-params {"fields" "first_name,email,last_name,first_name,picture"
                  "access_token" token} :as :json-strict})
           picture (:url (:data (:picture (:body req))))]
-      (auth-connect (assoc (:body req) :picture picture)))
+      (auth-connect (rename-keys (assoc (:body req) :picture picture) {:first_name :username})))
     (catch Exception e (utils/make-error 409 "Bad Facebook token"))))

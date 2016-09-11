@@ -12,7 +12,6 @@
   (GET "/google/:token" [token] (users/auth-google token)))
   
 (defroutes testing
-  (GET "/username/:uname" [uname] (users/test-username! uname))
   (GET "/email/:email" [email] (users/test-email! email)))
   
 (defroutes me

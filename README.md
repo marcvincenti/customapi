@@ -25,7 +25,6 @@ Return a private *user* object following this model :
 {
 	name : "John Doe"
 	picture : "path_to_your_profile_pic"
-	gender : "male"
 	email : "address@whatever.com"
 	access_token : "..."
 }
@@ -52,9 +51,8 @@ Return a private *user* object following the precedent model.
 You can subscribe an user with **[POST] -> /me/**
 using the following values :
  + email (string)
- + username (string)
  + password (string)
- + gender ("male" or "female" or _NULL_) - optionnal
+ + username (string) - optionnal
  + picture (url#string or a file) - optionnal
  
 #### Deleting user
@@ -68,5 +66,4 @@ This will return a field named *passwordUpdate* (boolean).
  
 ## Usefull stuff
 You can request api for specific things like :
- + is username already taken ? **[GET] -> /test/username/&lt;string>** (case insensitive)
  + is email already taken ? **[GET] -> /test/email/&lt;string>** (case insensitive)
