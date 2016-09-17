@@ -6,9 +6,11 @@
             [clojure-rest.data-verification :as verif]
             [clojure-rest.pictures :as pic]
             [clj-http.client :as client]
+            [clojure-rest.data-utils :refer [username? picture-uri? email-address?]]
             [ring.util.response :refer [response]]
             [clojure.set :refer [rename-keys]]))
-            
+
+
 (defn user-from-token
   "return a user from a given token or nil"
   [token]
@@ -49,7 +51,7 @@
 (defn test-email!
   "Check if the email is already taken and send back a response to the client"
   [email]
-  (let [errors (verif/check {:data email :function verif/xemail-address? :dataname "email" :required true})]
+  (let [errors (verif/check {:data email :function email-address? :dataname "email" :required true})]
     (if errors (utils/make-error 400 errors)
       (try 
         (if (email-in-db? email)
@@ -93,10 +95,10 @@
 (defn register!
   "Register a user in database (at least: email / username / picture)"
   [{:keys [username email picture password] :as user}]
-  (let [errors (verif/check {:data email :function [:and verif/xemail-address? xabsent-email?] :dataname "email" :required true}
-                            {:data username :function verif/xusername?}
-                            {:data password :function verif/xpassword?}
-                            {:data picture :function [:or verif/xpic-uri? verif/xpic-file?]})]
+  (let [errors (verif/check {:data email :function [:and email-address? xabsent-email?] :dataname "email" :required true}
+                            {:data username :function username?}
+                            {:data password :function verif/isString?}
+                            {:data picture :function [:or picture-uri? verif/xpic-file?]})]
     (if (-> errors empty? not) (utils/make-error 400 errors)
       (try 
         (let [salt (db-utils/generate-salt) 
@@ -118,11 +120,11 @@
   "Update a user in database"
   ([{:keys [username email picture oldpassword newpassword] :as user} id-user]
     (try 
-      (let [errors (verif/check {:data email :function verif/xemail-address?}
-                                {:data username :function verif/xusername?}
-                                {:data oldpassword :function verif/xpassword?}
-                                {:data newpassword :function verif/xpassword?}
-                                {:data picture :function [:or verif/xpic-uri? verif/xpic-file?]})
+      (let [errors (verif/check {:data email :function email-address?}
+                                {:data username :function username?}
+                                {:data oldpassword :function verif/isString?}
+                                {:data newpassword :function verif/isString?}
+                                {:data picture :function [:or picture-uri? verif/xpic-file?]})
             id-mail (email-in-db? email)]
         (if (and (or (not (nil? email) (or (not id-mail) (= id-user id-mail))))
                  (-> errors empty? not))
@@ -153,8 +155,8 @@
 (defn login!
   "Log the user and return his informations"
   ([{:keys [email password] :as user}]
-    (let [errors (verif/check {:data email :function verif/xemail-address? :dataname "email" :required true}
-                              {:data password :function verif/xpassword?})]
+    (let [errors (verif/check {:data email :function email-address? :dataname "email" :required true}
+                              {:data password :function verif/isString?})]
       (if (-> errors empty? not) (utils/make-error 400 errors)
         (try 
           (let [ret (first

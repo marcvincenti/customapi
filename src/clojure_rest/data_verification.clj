@@ -26,55 +26,12 @@
       (when-not (empty? wrong-entries)
         (clojure.string/join "\n" wrong-entries))))
       
-(defn xstring?
-  [x & {:keys [errmsg regex] :or {errmsg "Not a string."}}]
+(defn isString?
+  [x & {:keys [errmsg regex] :or {errmsg "Not a valid string."}}]
   (when (or (not (string? x))
           (and regex
                (not (boolean (re-matches (re-pattern regex) x))))) 
     errmsg))
-
-(defn xemail-address?
-  "Return string error if the email address is not valid, based on RFC 2822."
-  [email]
-  (if (string? email)
-	  (let [re (str "(?i)[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
-					"(?:\\.[a-z0-9!#$%&'*+/=?" "^_`{|}~-]+)*"
-					"@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+"
-					"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")]
-      (when-not (boolean (re-matches (re-pattern re) email))
-        "\"email\" is not RFC 2822 compliant."))
-    "\"email\" have to be a string."))
-    
-(defn xpassword?
-  "Return string error if the password isn't a string"
-  [pwd]
-  (when-not (string? pwd)
-    "\"email\" have to be a string."))
-    
-(defn xusername?
-  "Return string error if the username is not valid"
-  [uname]
-  (if (string? uname)
-	  (let [re (str "[a-zA-Z-_ ’'‘ÆÐƎƏƐƔĲŊŒẞÞǷȜæðǝəɛɣĳŋœĸſßþƿȝ"
-                  "ĄƁÇĐƊĘĦĮƘŁØƠŞȘŢȚŦŲƯY̨Ƴąɓçđɗęħįƙłøơşșţț"
-                  "ŧųưy̨ƴÁÀÂÄǍĂĀÃÅǺĄÆǼǢƁĆĊĈČÇĎḌĐƊÐÉÈĖÊËĚĔ"
-                  "ĒĘẸƎƏƐĠĜǦĞĢƔáàâäǎăāãåǻąæǽǣɓćċĉčçďḍđɗð"
-                  "éèėêëěĕēęẹǝəɛġĝǧğģɣĤḤĦIÍÌİÎÏǏĬĪĨĮỊĲĴĶ"
-                  "ƘĹĻŁĽĿʼNŃN̈ŇÑŅŊÓÒÔÖǑŎŌÕŐỌØǾƠŒĥḥħıíìiîï"
-                  "ǐĭīĩįịĳĵķƙĸĺļłľŀŉńn̈ňñņŋóòôöǒŏōõőọøǿơœ"
-                  "ŔŘŖŚŜŠŞȘṢẞŤŢṬŦÞÚÙÛÜǓŬŪŨŰŮŲỤƯẂẀŴẄǷÝỲŶŸ"
-                  "ȲỸƳŹŻŽẒŕřŗſśŝšşșṣßťţṭŧþúùûüǔŭūũűůųụưẃ"
-                  "ẁŵẅƿýỳŷÿȳỹƴźżžẓ0-9]{4,32}")]
-      (when-not (boolean (re-matches (re-pattern re) uname))
-        "The \"username\" can't contain special characters and has to be between 4 and 32 characters."))
-    "\"username\" have to be a string."))
-    
-(defn xpic-uri?
-  "Return a string error if picture uri isn't RFC 2396 compliant."
-  [uri]
-  (let [re (str "(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*\\.(?:jpg|jpeg|png))(?:\\?([^#]*))?(?:#(.*))?")]
-    (when-not (boolean (re-matches (re-pattern re) uri))
-      "\"picture\"'s URI is not RFC 2396 compliant.")))
 
 (defn xpic-file? 
   [{:keys [content-type]}]
