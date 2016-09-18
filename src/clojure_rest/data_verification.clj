@@ -27,13 +27,23 @@
         (clojure.string/join "\n" wrong-entries))))
       
 (defn isString?
+  "return error string if not a string
+   You can specify a regex (:regex) and an error message (:errmsg)"
   [x & {:keys [errmsg regex] :or {errmsg "Not a valid string."}}]
   (when (or (not (string? x))
           (and regex
                (not (boolean (re-matches (re-pattern regex) x))))) 
     errmsg))
-
-(defn xpic-file? 
-  [{:keys [content-type]}]
-  (when-not (or (= content-type "image/jpeg") (= content-type "image/png"))
-    "The \"picture\" doesn't seem to be a jpeg or a png or an uri."))
+    
+(defn isFile?
+  "return error string if not a file
+   You can specify a vector of authorized mime types (:types)
+  and an error message (:errmsg)"
+  [{:keys [content-type filename size tempfile]} & {:keys [errmsg types] :or {errmsg "Not a file."}}]
+  (when-not (and (instance? java.io.File tempfile) 
+                (number? size)
+                (string? filename)
+                (and (string? content-type)
+                    (or (not types)
+                        (some #(= content-type %) types))))
+    errmsg))

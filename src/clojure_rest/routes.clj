@@ -12,7 +12,8 @@
   (GET "/google/:token" [token] (users/auth-google token)))
   
 (defroutes testing
-  (GET "/email/:email" [email] (users/test-email! email)))
+  (GET "/email/:email" [email] (users/test-email! email))
+  (POST "/" {params :params} (str params)))
   
 (defroutes me
   (POST "/" {params :params} (users/register! params))

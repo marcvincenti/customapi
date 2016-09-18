@@ -1,7 +1,7 @@
 (ns clojure-rest.pictures
   (:require [amazonica.aws.s3 :refer [get-object put-object]]
             [clojure.java.io :refer [input-stream]]
-            [clojure-rest.data-utils :refer [picture-uri?]]
+            [clojure-rest.data-utils :refer [picture-uri? picture-file?]]
             [clojure-rest.db :as db]
             [clojure-rest.utils :as utils]
             [clojure-rest.data-verification :as verif])
@@ -44,7 +44,7 @@
 (defn return-uri
   "take an uri or a file (png/jpg) and return an uri"
   [picture]
-  (let [errors (verif/check {:data picture :function [:or picture-uri? verif/xpic-file?]})]
+  (let [errors (verif/check {:data picture :function [:or picture-uri? picture-file?]})]
     (if (-> errors empty? not) (utils/make-error 400 errors)
       (if (string? picture)
         picture

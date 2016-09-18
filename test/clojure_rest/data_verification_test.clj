@@ -11,6 +11,8 @@
         (isString? 1 :errmsg "test")))
   (is (= "I prefer letters." 
         (isString? "1234" :regex "[a-zA-Z]*" :errmsg "I prefer letters."))))
+        
+(deftest test-isFile?)
 
 (deftest test-check-object-normal
   (is (nil? (check {:data "testing@test.test" :function email-address? :dataname "email" :required true})))

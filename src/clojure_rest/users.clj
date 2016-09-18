@@ -6,7 +6,7 @@
             [clojure-rest.data-verification :as verif]
             [clojure-rest.pictures :as pic]
             [clj-http.client :as client]
-            [clojure-rest.data-utils :refer [username? picture-uri? email-address?]]
+            [clojure-rest.data-utils :refer [username? picture-uri? email-address? picture-file?]]
             [ring.util.response :refer [response]]
             [clojure.set :refer [rename-keys]]))
 
@@ -98,7 +98,7 @@
   (let [errors (verif/check {:data email :function [:and email-address? xabsent-email?] :dataname "email" :required true}
                             {:data username :function username?}
                             {:data password :function verif/isString?}
-                            {:data picture :function [:or picture-uri? verif/xpic-file?]})]
+                            {:data picture :function [:or picture-uri? picture-file?]})]
     (if (-> errors empty? not) (utils/make-error 400 errors)
       (try 
         (let [salt (db-utils/generate-salt) 
@@ -124,7 +124,7 @@
                                 {:data username :function username?}
                                 {:data oldpassword :function verif/isString?}
                                 {:data newpassword :function verif/isString?}
-                                {:data picture :function [:or picture-uri? verif/xpic-file?]})
+                                {:data picture :function [:or picture-uri? picture-file?]})
             id-mail (email-in-db? email)]
         (if (and (or (not (nil? email) (or (not id-mail) (= id-user id-mail))))
                  (-> errors empty? not))
@@ -209,7 +209,7 @@
 (defn ^:private auth-connect
   "Register the user in database or update his profile"
   [user]
-    (try 
+    ;(try 
       (let [in-db-user (first (jdbc/query
                           ["SELECT *
                            FROM users
@@ -218,7 +218,8 @@
         (if in-db-user
           (return-private-profile (assoc in-db-user :access_token (refresh-token (:id in-db-user))))
           (register! user)))
-      (catch Exception e (utils/make-error 500 "Unable to request the database."))))
+      ;(catch Exception e (utils/make-error 500 "Unable to request the database.")))
+      )
 
 (defn auth-google
   "Authenticate a user with google access token"
@@ -232,10 +233,11 @@
 (defn auth-facebook
   "Authenticate a user with facebook access token"
   [token]
-  (try
-    (let [req (client/get "https://graph.facebook.com/v2.6/me" 
-                {:query-params {"fields" "first_name,email,last_name,first_name,picture"
+  ;(try
+    (let [req (client/get "https://graph.facebook.com/v2.7/me" 
+                {:query-params {"fields" "first_name,email,picture"
                  "access_token" token} :as :json-strict})
           picture (:url (:data (:picture (:body req))))]
       (auth-connect (rename-keys (assoc (:body req) :picture picture) {:first_name :username})))
-    (catch Exception e (utils/make-error 409 "Bad Facebook token"))))
+    ;(catch Exception e (utils/make-error 409 "Bad Facebook token")))
+    )
