@@ -35,10 +35,20 @@
                (not (boolean (re-matches (re-pattern regex) x))))) 
     errmsg))
     
+(defn isNumber?
+  "return error string if not a number
+   You can specify a minimum (:min), a maximum (:max)
+   and an error message (:errmsg)"
+  [x & {:keys [errmsg min max] :or {errmsg "Not a number."}}]
+  (when (or (not (number? x))
+            (and max (> x max))
+            (and min (< x min)))
+    errmsg))
+    
 (defn isFile?
   "return error string if not a file
    You can specify a vector of authorized mime types (:types)
-  and an error message (:errmsg)"
+   and an error message (:errmsg)"
   [{:keys [content-type filename size tempfile]} & {:keys [errmsg types] :or {errmsg "Not a file."}}]
   (when-not (and (instance? java.io.File tempfile) 
                 (number? size)

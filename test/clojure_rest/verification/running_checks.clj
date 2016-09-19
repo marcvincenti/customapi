@@ -1,18 +1,7 @@
-(ns clojure-rest.data-verification-test
+(ns clojure-rest.verification.running-checks
   (:require [clojure.test :refer :all]
             [clojure-rest.data-verification :refer :all]
             [clojure-rest.data-utils :refer :all]))
-
-(deftest test-isString?
-  (is (nil? (isString? "test")))
-  (is (= "Not a valid string." 
-        (isString? 1)))
-  (is (= "test" 
-        (isString? 1 :errmsg "test")))
-  (is (= "I prefer letters." 
-        (isString? "1234" :regex "[a-zA-Z]*" :errmsg "I prefer letters."))))
-        
-(deftest test-isFile?)
 
 (deftest test-check-object-normal
   (is (nil? (check {:data "testing@test.test" :function email-address? :dataname "email" :required true})))
