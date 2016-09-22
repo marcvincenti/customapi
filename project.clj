@@ -10,8 +10,7 @@
                  [org.postgresql/postgresql "9.4-1201-jdbc41"]
                  [clojure.jdbc/clojure.jdbc-c3p0 "0.3.1"]
                  [clj-http "3.0.1"]
-                 [crypto-random "1.2.0"]
-                 [amazonica "0.3.67"]]
+                 [crypto-random "1.2.0"]]
   :plugins [[lein-ring "0.9.7"]]
   :ring {:init clojure-rest.db/init!
          :handler clojure-rest.handler/app}

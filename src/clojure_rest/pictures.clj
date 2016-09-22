@@ -1,6 +1,5 @@
 (ns clojure-rest.pictures
-  (:require [amazonica.aws.s3 :refer [get-object put-object]]
-            [clojure.java.io :refer [input-stream]]
+  (:require [clojure.java.io :refer [input-stream]]
             [clojure-rest.data-utils :refer [picture-uri? picture-file?]]
             [clojure-rest.db :as db]
             [clojure-rest.utils :as utils]
@@ -30,14 +29,7 @@
         out (ByteArrayOutputStream.)
         new-filename (str dir "/" (utils/uid) ".png")]
       (make-thumbnail (input-stream tempfile) out 500)
-      (try (future 
-          (put-object
-            :bucket-name db/bucket
-            :key new-filename
-            :input-stream (input-stream (.toByteArray out))
-            :metadata {:content-type "image/png" 
-                       :content-length (count (.toByteArray out))}
-            :access-control-list {:grant-permission ["AllUsers" "Read"]}))
+      (try (future nil)
          (str "https://s3-" (System/getenv "AMZ_ENDPOINT") ".amazonaws.com/" db/bucket "/" new-filename)
         (catch Exception e nil))))
 
