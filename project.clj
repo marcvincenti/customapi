@@ -1,5 +1,5 @@
 (defproject clojure-rest "0.1.0-SNAPSHOT"
-  :description "REST API"
+  :description "Automated Generation Of REST APIs"
   :url "localhost"
   :min-lein-version "2.0.0"
   :dependencies [[org.clojure/clojure "1.8.0"]

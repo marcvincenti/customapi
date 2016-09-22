@@ -1,9 +1,8 @@
 (ns clojure-rest.db
   (:import com.mchange.v2.c3p0.ComboPooledDataSource)
-  (:require [clojure.java.jdbc :as jdbc]
-            [clojure-rest.db-utils :refer [table-exist?]]
-            [jdbc.pool.c3p0 :as pool]
-            [java-jdbc.ddl :as ddl]))
+  (:require [clojure.java.jdbc :as jdbc :only [query with-db-transaction]]
+            [jdbc.pool.c3p0 :as c3p0 :only [make-datasource-spec]]
+            [clojure-rest.db-utils :refer [create-table]]))
   
 (def bucket "clojure-api-users")
 
@@ -17,39 +16,33 @@
   :classname "org.postgresql.Driver"
   :subprotocol "postgresql"})
 
-(defn ^:private create-user-db [profile]
-  (if-not (table-exist? "users" profile)
-    (jdbc/db-do-prepared profile
-      (ddl/create-table :users
-        [:id :serial "PRIMARY KEY"]
-        [:email "varchar(32)" "UNIQUE" "NOT NULL"]
-        [:username "varchar(32)"]
-        [:picture "VARCHAR(2083)"]
-        [:salt "bytea"]
-        [:password "VARCHAR(50)"])))
-  (if-not (table-exist? "roles" profile)
-    (do
-      (jdbc/db-do-prepared profile
-        (ddl/create-table :roles
-          [:id "integer" "PRIMARY KEY"]
-          [:name "varchar(16)" "NOT NULL" "UNIQUE"]))
-      (jdbc/insert! profile :roles {:id 100 :name "verified"})
-      (jdbc/insert! profile :roles {:id 200 :name "admin"})))
-  (if-not (table-exist? "user_role" profile)
-    (jdbc/db-do-prepared profile
-      (ddl/create-table :user_role
-        [:rel_user "integer" "references users(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
-        [:rel_role "integer" "references roles(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
-        ["PRIMARY KEY (rel_user, rel_role)"])))
-  (if-not (table-exist? "tokens" profile)
-    (jdbc/db-do-prepared profile
-      (ddl/create-table :tokens
-        [:rel_user "integer" "UNIQUE" "references users(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
-        [:access_token "varchar(36)" "PRIMARY KEY"]
-        [:expire "bigint" "NOT NULL"]))))
+(defn ^:private create-user-schema [profile]
+  (jdbc/with-db-transaction [t-con profile]
+    ;create schema 'users'
+    (try (jdbc/query t-con "CREATE SCHEMA IF NOT EXISTS users")
+      (catch Exception e))
+    ;create tables to put in users
+    (create-table t-con "users" "users"
+      [:id :serial "PRIMARY KEY"]
+      [:email "varchar(32)" "UNIQUE" "NOT NULL"]
+      [:username "varchar(32)"]
+      [:picture "VARCHAR(2083)"]
+      [:salt "bytea"]
+      [:password "VARCHAR(50)"])
+    (create-table t-con "roles" "users"
+      [:id "integer" "PRIMARY KEY"]
+      [:name "varchar(16)" "NOT NULL" "UNIQUE"])
+    (create-table t-con "user_role" "users"
+      [:rel_user "integer" "references users.users(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
+      [:rel_role "integer" "references users.roles(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
+      ["PRIMARY KEY (rel_user, rel_role)"])
+    (create-table t-con "tokens" "users"
+      [:rel_user "integer" "UNIQUE" "references users.users(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
+      [:access_token "varchar(36)" "PRIMARY KEY"]
+      [:expire "bigint" "NOT NULL"])))
             
 (defn init! []
-  ;connect and build Postgres users database
+  ;connect and init database
   (-> db-specs
-     pool/make-datasource-spec
-     create-user-db))
+     c3p0/make-datasource-spec
+     create-user-schema))

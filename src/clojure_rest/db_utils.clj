@@ -1,7 +1,8 @@
 (ns clojure-rest.db-utils
-	(:require [crypto.random :as crypto]
+	(:require [crypto.random :as crypto :only [bytes]]
             [clojure-rest.utils :as utils]
-            [clojure.java.jdbc :as jdbc])
+            [clojure.java.jdbc :as jdbc :only [query update! insert! db-do-prepared]]
+            [java-jdbc.ddl :as ddl :only [create-table]])
   (import java.security.SecureRandom
           javax.crypto.SecretKeyFactory
           javax.crypto.spec.PBEKeySpec))
@@ -39,8 +40,18 @@
       
 (defn table-exist?
   "Check if the schema from the database contains the table"
-  [table-name db-specs]
-  (-> (jdbc/query db-specs
-          ["SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = ?)" table-name])
-      first
-      :exists))
+  ([conn table-name]
+    (table-exist? conn table-name "public"))
+  ([conn table-name table-schema]
+    (-> (jdbc/query conn
+            ["SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ?)" 
+              table-schema table-name])
+        first
+        :exists)))
+        
+(defn create-table
+  "Create this table if it doesn't already exist"
+  [conn table-name table-schema & args]
+    (if-not (table-exist? conn table-name table-schema)
+      (jdbc/db-do-prepared conn
+        (apply ddl/create-table (str table-schema "." table-name) args))))
