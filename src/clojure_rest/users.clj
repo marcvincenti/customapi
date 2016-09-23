@@ -10,7 +10,6 @@
             [ring.util.response :refer [response]]
             [clojure.set :refer [rename-keys]]))
 
-
 (defn user-from-token
   "return a user from a given token or nil"
   [token]

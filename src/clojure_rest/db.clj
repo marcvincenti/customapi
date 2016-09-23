@@ -2,9 +2,17 @@
   (:import com.mchange.v2.c3p0.ComboPooledDataSource)
   (:require [clojure.java.jdbc :as jdbc :only [query with-db-transaction]]
             [jdbc.pool.c3p0 :as c3p0 :only [make-datasource-spec]]
-            [clojure-rest.db-utils :refer [create-table]]))
+            [clojure-rest.db-utils :refer [create-table]]
+            [amazonica.aws.s3 :as s3 :only [does-bucket-exist ]]
+            [amazonica.core :as amz-core :only [defcredential]]))
   
-(def bucket "clojure-api-users")
+(def bucket "clojure-api-users-2")
+
+;todo: have to remove this later
+(def ^:private client-opts
+  {:access-key (System/getenv "AWS_ACCESS_KEY_ID")
+   :secret-key (System/getenv "AWS_SECRET_ACCESS_KEY")
+   :endpoint   (System/getenv "AWS_DYNAMODB_ENDPOINT")})
 
 (def ^:private db-specs
   {:user (or (System/getenv "DATABASE_USER")
@@ -15,6 +23,10 @@
                 "//another.ctcyur2o6hny.eu-west-1.rds.amazonaws.com:5432/postgres")
   :classname "org.postgresql.Driver"
   :subprotocol "postgresql"})
+  
+(defn ^:private aws-setup []
+  (when-not (s3/does-bucket-exist bucket) 
+    (s3/create-bucket bucket)))
 
 (defn ^:private create-user-schema [profile]
   (jdbc/with-db-transaction [t-con profile]
@@ -42,7 +54,10 @@
       [:expire "bigint" "NOT NULL"])))
             
 (defn init! []
-  ;connect and init database
-  (-> db-specs
-     c3p0/make-datasource-spec
-     create-user-schema))
+  (do
+    ;connect and init everything in aws
+    (aws-setup)
+    ;connect and init database
+    (-> db-specs
+       c3p0/make-datasource-spec
+       create-user-schema)))
