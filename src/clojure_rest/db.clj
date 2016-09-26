@@ -1,10 +1,10 @@
 (ns clojure-rest.db
   (:import com.mchange.v2.c3p0.ComboPooledDataSource)
-  (:require [clojure.java.jdbc :as jdbc :only [query with-db-transaction]]
-            [jdbc.pool.c3p0 :as c3p0 :only [make-datasource-spec]]
-            [clojure-rest.db-utils :refer [create-table]]
-            [amazonica.aws.s3 :as s3 :only [does-bucket-exist ]]
-            [amazonica.core :as amz-core :only [defcredential]]))
+  (:require ;[clojure.java.jdbc :as jdbc :only [query with-db-transaction]]
+            ;[jdbc.pool.c3p0 :as c3p0 :only [make-datasource-spec]]
+            ;[clojure-rest.db-utils :refer [create-table]]
+            [clojure-rest.db-utilsv2 :refer [create-tables]]
+            [amazonica.aws.s3 :as s3 :only [does-bucket-exist]]))
   
 (def bucket "clojure-api-users-2")
 
@@ -25,9 +25,38 @@
   :subprotocol "postgresql"})
   
 (defn ^:private aws-setup []
-  (when-not (s3/does-bucket-exist bucket) 
-    (s3/create-bucket bucket)))
-
+  (do
+    ;initializing S3
+    (when-not (s3/does-bucket-exist bucket) 
+      (s3/create-bucket bucket))
+    ;initializing DynamoDB
+    (create-tables {
+        :table-name "testTabel1"
+        :key-schema
+          [{:attribute-name "id"   :key-type "HASH"}
+           {:attribute-name "date" :key-type "RANGE"}]
+        :attribute-definitions
+          [{:attribute-name "id"      :attribute-type "S"}
+           {:attribute-name "date"    :attribute-type "N"}
+           {:attribute-name "column1" :attribute-type "S"}
+           {:attribute-name "column2" :attribute-type "S"}]
+        :local-secondary-indexes
+          [{:index-name "column1_idx"
+            :key-schema
+             [{:attribute-name "id"   :key-type "HASH"}
+              {:attribute-name "column1" :key-type "RANGE"}]
+           :projection
+             {:projection-type "INCLUDE"
+              :non-key-attributes ["id" "date" "column1"]}}
+           {:index-name "column2_idx"
+            :key-schema
+             [{:attribute-name "id"   :key-type "HASH"}
+              {:attribute-name "column2" :key-type "RANGE"}]
+           :projection {:projection-type "ALL"}}]
+        :provisioned-throughput
+          {:read-capacity-units 1
+           :write-capacity-units 1}})))
+(comment
 (defn ^:private create-user-schema [profile]
   (jdbc/with-db-transaction [t-con profile]
     ;create schema 'users'
@@ -51,13 +80,14 @@
     (create-table t-con "tokens" "users"
       [:rel_user "integer" "UNIQUE" "references users.users(id)" "ON DELETE CASCADE" "ON UPDATE CASCADE"]
       [:access_token "varchar(36)" "PRIMARY KEY"]
-      [:expire "bigint" "NOT NULL"])))
+      [:expire "bigint" "NOT NULL"]))))
             
 (defn init! []
   (do
     ;connect and init everything in aws
     (aws-setup)
     ;connect and init database
-    (-> db-specs
-       c3p0/make-datasource-spec
-       create-user-schema)))
+    (comment
+      (-> db-specs
+         c3p0/make-datasource-spec
+         create-user-schema))))
