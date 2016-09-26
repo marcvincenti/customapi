@@ -31,28 +31,21 @@
       (s3/create-bucket bucket))
     ;initializing DynamoDB
     (create-tables {
-        :table-name "testTabel1"
+        :table-name "users"
         :key-schema
-          [{:attribute-name "id"   :key-type "HASH"}
-           {:attribute-name "date" :key-type "RANGE"}]
+          [{:attribute-name "id" :key-type "HASH"}]
         :attribute-definitions
-          [{:attribute-name "id"      :attribute-type "S"}
-           {:attribute-name "date"    :attribute-type "N"}
-           {:attribute-name "column1" :attribute-type "S"}
-           {:attribute-name "column2" :attribute-type "S"}]
-        :local-secondary-indexes
-          [{:index-name "column1_idx"
+          [{:attribute-name "id"              :attribute-type "S"}
+           {:attribute-name "email"           :attribute-type "S"}]
+        :global-secondary-indexes
+          [{:index-name "email"
             :key-schema
-             [{:attribute-name "id"   :key-type "HASH"}
-              {:attribute-name "column1" :key-type "RANGE"}]
-           :projection
-             {:projection-type "INCLUDE"
-              :non-key-attributes ["id" "date" "column1"]}}
-           {:index-name "column2_idx"
-            :key-schema
-             [{:attribute-name "id"   :key-type "HASH"}
-              {:attribute-name "column2" :key-type "RANGE"}]
-           :projection {:projection-type "ALL"}}]
+             [{:attribute-name "email"   :key-type "HASH"}]
+            :projection
+             {:projection-type "KEYS_ONLY"}
+            :provisioned-throughput
+             {:read-capacity-units 1 :write-capacity-units 1}
+          }]
         :provisioned-throughput
           {:read-capacity-units 1
            :write-capacity-units 1}})))
