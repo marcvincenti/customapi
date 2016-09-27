@@ -3,16 +3,22 @@
   (:require ;[clojure.java.jdbc :as jdbc :only [query with-db-transaction]]
             ;[jdbc.pool.c3p0 :as c3p0 :only [make-datasource-spec]]
             ;[clojure-rest.db-utils :refer [create-table]]
-            [clojure-rest.db-utilsv2 :refer [create-tables]]
+            [clojure-rest.db-utilsv2 :refer [create-tables init-objects]]
             [amazonica.aws.s3 :as s3 :only [does-bucket-exist]]))
   
 (def bucket "clojure-api-users-2")
 
-;todo: have to remove this later
-(def ^:private client-opts
-  {:access-key (System/getenv "AWS_ACCESS_KEY_ID")
-   :secret-key (System/getenv "AWS_SECRET_ACCESS_KEY")
-   :endpoint   (System/getenv "AWS_DYNAMODB_ENDPOINT")})
+(def ^:private objects
+  {:users {:keys [
+            {:id {:type "Counter" :order-by :creation-date}}
+            {:email {:type "String"}}]
+           :data [
+            {:name {:type "String"}}
+            {:password {:type "String"}}
+            {:salt {:type "Binary"}}
+            {:creation-date {:type "Int"}}
+            {:last-connection {:type "Int"}}
+            {:picture {:type "String"}}]}})
 
 (def ^:private db-specs
   {:user (or (System/getenv "DATABASE_USER")
@@ -30,6 +36,7 @@
     (when-not (s3/does-bucket-exist bucket) 
       (s3/create-bucket bucket))
     ;initializing DynamoDB
+    (comment
     (create-tables {
         :table-name "users"
         :key-schema
@@ -48,7 +55,9 @@
           }]
         :provisioned-throughput
           {:read-capacity-units 1
-           :write-capacity-units 1}})))
+           :write-capacity-units 1}}))
+      (init-objects objects)))
+
 (comment
 (defn ^:private create-user-schema [profile]
   (jdbc/with-db-transaction [t-con profile]
