@@ -7,7 +7,7 @@
           javax.crypto.spec.PBEKeySpec))
 
 (def ^:private cred 
-  {:endpoint (str "http://dynamodb." (System/getenv "AWS_ENDPOINT") ".amazonaws.com")})
+  {:endpoint (str "http://dynamodb." (System/getenv "AWS_REGION") ".amazonaws.com")})
 
 (defn generate-token-map
   "Return a new token access and an expiration unix time in a map"
@@ -55,30 +55,52 @@
       (fn [arg1 arg2] 
         (let [obj-keys (:keys (second arg2))
               table-name (name (first arg2))
-              key-schema (let [hash-var [{:attribute-name (-> obj-keys first first name)
-                                          :key-type "HASH"}]
-                              range-var (:order-by (-> obj-keys first second))]
-                            (if range-var 
-                              (conj hash-var {:attribute-name (name range-var)
-                                              :key-type "RANGE"})
+              key-schema 
+                (let [hash-var [{:attribute-name (-> obj-keys first first name)
+                                 :key-type "HASH"}]
+                    range-var (:order-by (-> obj-keys first second))]
+                  (if range-var 
+                    (conj hash-var {:attribute-name (name range-var)
+                                    :key-type "RANGE"})
                               hash-var))
-              attribute-definitions (into [] (for [[k v] obj-keys] 
-                                      {:attribute-name (name k) 
-                                       :attribute-type (toDynamoDBType (:type v))}))
-              provisioned-throughput (let [{:keys [read-capacity-units write-capacity-units] 
-                                            :or {read-capacity-units (:read-capacity-units default-values)
-                                                 write-capacity-units (:write-capacity-units default-values)}} 
-                                            (:provisioned-throughput (-> obj-keys first second))]
-                                        {:read-capacity-units read-capacity-units
-                                         :write-capacity-units write-capacity-units})
-              global-secondary-indexes (reduce (fn [lst index] (conj lst 
-                              {:index-name (-> index first name)})) 
-                              [] (rest obj-keys))]
-        (conj arg1 {:table-name table-name
-                    :key-schema key-schema
-                    :attribute-definitions attribute-definitions
-                    :global-secondary-indexes global-secondary-indexes
-                    :provisioned-throughput provisioned-throughput})))
+              attribute-definitions 
+                (into [] (for [[k v] obj-keys] 
+                  {:attribute-name (name k) 
+                   :attribute-type (toDynamoDBType (:type v))}))
+              provisioned-throughput 
+                (let [{:keys [read-capacity-units write-capacity-units] 
+                       :or {read-capacity-units (:read-capacity-units default-values)
+                            write-capacity-units (:write-capacity-units default-values)}} 
+                      (:provisioned-throughput (-> obj-keys first second))]
+                  {:read-capacity-units read-capacity-units
+                   :write-capacity-units write-capacity-units})
+              global-secondary-indexes 
+                  (reduce (fn [lst index] 
+                    (let [key-schema (let [hash-var [{:attribute-name (-> index first name)
+                                                      :key-type "HASH"}]
+                                           range-var (:order-by (second index))]
+                                        (if range-var 
+                                          (conj hash-var {:attribute-name (name range-var)
+                                                          :key-type "RANGE"})
+                                          hash-var))
+                          provisioned-throughput (let [{:keys [read-capacity-units write-capacity-units] 
+                                                        :or {read-capacity-units (:read-capacity-units default-values)
+                                                             write-capacity-units (:write-capacity-units default-values)}} 
+                                                        (:provisioned-throughput (second index))]
+                                                    {:read-capacity-units read-capacity-units
+                                                     :write-capacity-units write-capacity-units})]
+                      (conj lst {:index-name (str "index_" (-> index first name))
+                                 :key-schema key-schema
+                                 :projection {:projection-type "ALL"}
+                                 :provisioned-throughput provisioned-throughput}))) 
+                        [] (rest obj-keys))]
+        (conj arg1 (let [tablemap {:table-name table-name
+                                   :key-schema key-schema
+                                   :attribute-definitions attribute-definitions
+                                   :provisioned-throughput provisioned-throughput}]
+                    (if-not (empty? global-secondary-indexes)
+                      (assoc tablemap :global-secondary-indexes global-secondary-indexes)
+                      tablemap)))))
       [] objs))
         
 (defn create-tables
