@@ -9,16 +9,18 @@
 (def bucket "clojure-api-users-2")
 
 (def ^:private objects
-  {:users {:keys [
-            {:id {:type "Counter" :order-by :creation-date}}
-            {:email {:type "String"}}]
-           :data [
-            {:name {:type "String"}}
-            {:password {:type "String"}}
-            {:salt {:type "Binary"}}
-            {:creation-date {:type "Int"}}
-            {:last-connection {:type "Int"}}
-            {:picture {:type "String"}}]}})
+  {:users {:keys {
+            :id {:type "Index" 
+                 :order-by :creation-date 
+                 :provisioned-throughput {:read-capacity-units 5}}
+            :email {:type "String"}}
+           :data {
+            :name {:type "String"}
+            :password {:type "String"}
+            :salt {:type "Binary"}
+            :creation-date {:type "Integer"}
+            :last-connection {:type "Integer"}
+            :picture {:type "String"}}}})
 
 (def ^:private db-specs
   {:user (or (System/getenv "DATABASE_USER")
@@ -49,7 +51,7 @@
             :key-schema
              [{:attribute-name "email"   :key-type "HASH"}]
             :projection
-             {:projection-type "KEYS_ONLY"}
+             {:projection-type "ALL"}
             :provisioned-throughput
              {:read-capacity-units 1 :write-capacity-units 1}
           }]

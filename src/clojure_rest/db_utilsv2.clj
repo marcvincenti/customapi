@@ -31,26 +31,54 @@
       (format "%x"
         (java.math.BigInteger. (.getEncoded (.generateSecret f k)))))))
      
-;DynamoDB functions     
+     
+;DynamoDB functions
+
+(def ^:private default-values
+  "Some default value to provide to dynamodb"
+  {:read-capacity-units 2
+   :write-capacity-units 2})
+  
+
+(defn ^:private toDynamoDBType
+  "Transform a custom type (string) to the corresponding dynamodb type"
+  [customType]
+    (case customType
+        ("Binary") "B"
+        ("Index" "Date" "Integer" "Float" "Double") "N"
+        ("File" "String" "Char") "S"))
      
 (defn init-objects
-  "Create tables to support store this objects in dynamoDB"
+  "Create tables creation scripts to let dynamoDB store our objects"
   [objs]
     (reduce 
       (fn [arg1 arg2] 
         (let [obj-keys (:keys (second arg2))
               table-name (name (first arg2))
-              key-schema (let [hash-var [{:attribute-name (-> obj-keys first first first name)
+              key-schema (let [hash-var [{:attribute-name (-> obj-keys first first name)
                                           :key-type "HASH"}]
-                              range-var (:order-by (-> obj-keys first first second))]
+                              range-var (:order-by (-> obj-keys first second))]
                             (if range-var 
                               (conj hash-var {:attribute-name (name range-var)
                                               :key-type "RANGE"})
                               hash-var))
-              attribute-definitions "keys def + range key def + no duplicates"]
+              attribute-definitions (into [] (for [[k v] obj-keys] 
+                                      {:attribute-name (name k) 
+                                       :attribute-type (toDynamoDBType (:type v))}))
+              provisioned-throughput (let [{:keys [read-capacity-units write-capacity-units] 
+                                            :or {read-capacity-units (:read-capacity-units default-values)
+                                                 write-capacity-units (:write-capacity-units default-values)}} 
+                                            (:provisioned-throughput (-> obj-keys first second))]
+                                        {:read-capacity-units read-capacity-units
+                                         :write-capacity-units write-capacity-units})
+              global-secondary-indexes (reduce (fn [lst index] (conj lst 
+                              {:index-name (-> index first name)})) 
+                              [] (rest obj-keys))]
         (conj arg1 {:table-name table-name
                     :key-schema key-schema
-                    :attribute-definitions attribute-definitions})))
+                    :attribute-definitions attribute-definitions
+                    :global-secondary-indexes global-secondary-indexes
+                    :provisioned-throughput provisioned-throughput})))
       [] objs))
         
 (defn create-tables
