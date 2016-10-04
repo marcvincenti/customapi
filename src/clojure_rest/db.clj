@@ -38,27 +38,23 @@
     (when-not (s3/does-bucket-exist bucket) 
       (s3/create-bucket bucket))
     ;initializing DynamoDB
-    (comment
-    (create-tables {
-        :table-name "users"
-        :key-schema
-          [{:attribute-name "id" :key-type "HASH"}]
-        :attribute-definitions
-          [{:attribute-name "id"              :attribute-type "S"}
-           {:attribute-name "email"           :attribute-type "S"}]
-        :global-secondary-indexes
-          [{:index-name "email"
-            :key-schema
-             [{:attribute-name "email"   :key-type "HASH"}]
-            :projection
-             {:projection-type "ALL"}
-            :provisioned-throughput
-             {:read-capacity-units 1 :write-capacity-units 1}
-          }]
-        :provisioned-throughput
-          {:read-capacity-units 1
-           :write-capacity-units 1}}))
-      (init-objects objects)))
+    (apply create-tables (init-objects 
+      {:users {:keys {
+            :id {:type "Index" 
+                 :order-by :creation-date 
+                 :provisioned-throughput {:read-capacity-units 5}}
+            :email {:type "String"}}
+           :data {
+            :name {:type "String"}
+            :password {:type "String"}
+            :salt {:type "Binary"}
+            :creation-date {:type "Integer"}
+            :last-connection {:type "Integer"}
+            :picture {:type "String"}}}}
+      {:tests {:keys {
+               :id {:type "Index" }
+               :email {:type "String" :order-by :id}}
+           :data {}}}))))
 
 (comment
 (defn ^:private create-user-schema [profile]

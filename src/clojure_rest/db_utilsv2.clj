@@ -64,9 +64,11 @@
                                     :key-type "RANGE"})
                               hash-var))
               attribute-definitions 
-                (into [] (for [[k v] obj-keys] 
-                  {:attribute-name (name k) 
-                   :attribute-type (toDynamoDBType (:type v))}))
+                (let [infos (conj obj-keys (:data (second arg2)))]
+                  (into [] (for [k (remove nil? (distinct (concat 
+                            (keys obj-keys)
+                            (map :order-by (vals obj-keys)))))]
+                    {:attribute-name (name k) :attribute-type (toDynamoDBType (:type (get infos k)))})))
               provisioned-throughput 
                 (let [{:keys [read-capacity-units write-capacity-units] 
                        :or {read-capacity-units (:read-capacity-units default-values)
