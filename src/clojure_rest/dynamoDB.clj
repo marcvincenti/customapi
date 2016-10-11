@@ -1,5 +1,6 @@
-(ns clojure-rest.db-utilsv2
-	(:require [amazonica.aws.dynamodbv2 :as ddb 
+(ns clojure-rest.dynamoDB
+	(:require [clojure-rest.app :as app]
+            [amazonica.aws.dynamodbv2 :as ddb 
                                       :only [create-table list-tables]]))
             
 (def ^:private cred 
@@ -9,7 +10,6 @@
   "Some default value to provide to dynamodb"
   {:read-capacity-units 2
    :write-capacity-units 2})
-  
 
 (defn ^:private toDynamoDBType
   "Translate a custom type (string) to the corresponding dynamodb type"
@@ -75,18 +75,21 @@
       tablemap)))))
       
 (defn update-db
-  "Take a list of object in parameters 
+  "Take a map of objects in parameters
    and update database to support this objects"
-  [& args]
-  (let [ddb-tables (:table-names (ddb/list-tables cred))]
-    (doseq [tab (reduce (fn [ddb-tables my-obj] 
-                  (let [tab-name (-> my-obj first first name)] 
+  [tables-map]
+  (let [ddb-tables (filter #(re-matches (re-pattern (str "^" app/app-name "-(.*)$")) %) 
+                      (:table-names (ddb/list-tables cred)))
+        objects-map (into {} (for [[k v] tables-map] 
+                              [(keyword (str app/app-name "-" (name k))) v]))]
+    (doseq [tab (reduce-kv (fn [ddb-tables k v] 
+                  (let [tab-name (-> k name)] 
                     (if-not (some #{tab-name} ddb-tables)
                       (do
                         (println (str "Create table \"" tab-name "\"."))
-                        (-> my-obj first create-table future)
+                        (-> {k v} first create-table)
                         ddb-tables)
                       (do (println (str "Update table \"" tab-name "\"."))
                         (filter #(not= % tab-name) ddb-tables)))))
-                  ddb-tables args)]
+                  ddb-tables objects-map)]
       (println (str "Delete table \"" tab "\".")))))
