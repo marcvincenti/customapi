@@ -86,10 +86,10 @@
                     (if-not (some #{tab-name} ddb-tables)
                       (do
                         (println (str "Create table \"" tab-name "\"."))
-                        (ddb/create-table cred (-> {k v} first create-table))
+                        (->> {k v} first create-table (ddb/create-table cred) future)
                         ddb-tables)
                       (do (println (str "Update table \"" tab-name "\"."))
                         (filter #(not= % tab-name) ddb-tables)))))
                   ddb-tables objects-map)]
       (do (println (str "Delete table \"" tab "\"."))
-        (ddb/delete-table cred :table-name tab)))))
+        (->> tab (ddb/delete-table cred :table-name) future)))))
