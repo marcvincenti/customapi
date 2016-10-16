@@ -1,10 +1,10 @@
-(ns clojure-rest.aws.dynamoDB
+(ns aws.dynamoDB-create
   (:require [clojure.test :refer :all]
-            [clojure-rest.dynamoDB]))
+            [aws.dynamoDB]))
             
 (defn create-table 
   [tab]
-  (apply (intern 'clojure-rest.dynamoDB 'create-table) tab))
+  (apply (intern 'aws.dynamoDB 'create-table) tab))
             
 (deftest test-createTable
   (is (= (create-table {:test {:keys {:id {:type "Index"}}}})

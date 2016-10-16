@@ -1,4 +1,4 @@
-(ns clojure-rest.data-verification)
+(ns verifications.data-verification)
 
 (defn ^:private run-checks
   "run the multiples checks to do, data is not nil and func is a function or a list of functions"

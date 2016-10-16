@@ -1,5 +1,5 @@
-(ns clojure-rest.dynamoDB
-	(:require [clojure-rest.app :as app]
+(ns aws.dynamoDB
+	(:require [aws.data :as data]
             [amazonica.aws.dynamodbv2 :as ddb 
               :only [create-table list-tables delete-table]]))
             
@@ -77,10 +77,10 @@
   "Take a map of objects in parameters
    and update database to support this objects"
   [tables-map]
-  (let [ddb-tables (filter #(re-matches (re-pattern (str "^" app/app-name "-(.*)$")) %) 
+  (let [ddb-tables (filter #(re-matches (re-pattern (str "^" @data/app-name "-(.*)$")) %) 
                       (:table-names (ddb/list-tables cred)))
         objects-map (into {} (for [[k v] tables-map] 
-                              [(keyword (str app/app-name "-" (name k))) v]))]
+                              [(keyword (str @data/app-name "-" (name k))) v]))]
     (doseq [tab (reduce-kv (fn [ddb-tables k v] 
                   (let [tab-name (-> k name)] 
                     (if-not (some #{tab-name} ddb-tables)

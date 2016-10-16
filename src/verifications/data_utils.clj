@@ -1,5 +1,5 @@
-(ns clojure-rest.data-utils
-  (:require [clojure-rest.data-verification :refer [isString? isFile?]]))
+(ns verifications.data-utils
+  (:require [verifications.data-verification :refer [isString? isFile?]]))
 
 (defn email-address?
   "Return string error if the email address is not valid, based on RFC 2822."

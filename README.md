@@ -7,8 +7,12 @@ Use environment variables :
 + AMZ_SECRET : your amazon secret key
 + AMZ_REGION : the region for dynamodb tables (_ex:_ eu-west-1)
 
+You have to provide a name to your app. 
++ With environment variables : APP_NAME
++ Or with aws/set-app-name
+
 ## Usage 
-See **src/clojure_rest/app.clj** for now.
+See **...** for now.
 
 ## Sides effects in AWS
 You have to provide a name to your app (_see app-name_).  

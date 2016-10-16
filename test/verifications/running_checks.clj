@@ -1,7 +1,7 @@
-(ns clojure-rest.verification.running-checks
+(ns verifications.running-checks
   (:require [clojure.test :refer :all]
-            [clojure-rest.data-verification :refer :all]
-            [clojure-rest.data-utils :refer :all]))
+            [verifications.data-verification :refer :all]
+            [verifications.data-utils :refer :all]))
 
 (deftest test-check-object-normal
   (is (nil? (check {:data "testing@test.test" :function email-address? :dataname "email" :required true})))

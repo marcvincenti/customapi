@@ -1,8 +1,8 @@
-(ns clojure-rest.verification.data-types
+(ns verifications.data-types
   (:require [clojure.test :refer :all]
             [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [ring.util.io :refer [string-input-stream]]
-            [clojure-rest.data-verification :refer :all]))
+            [verifications.data-verification :refer :all]))
 
 (deftest test-isString?
   (is (nil? (isString? "test")))
