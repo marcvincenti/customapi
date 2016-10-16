@@ -9,14 +9,15 @@
               :id {:type "Index" 
                    :order-by :creation-date 
                    :provisioned-throughput {:read-capacity-units 1}}
-              :email {:type "String"}}
+              :email {:type "String"
+                      :order-by :last-connection }
+              :name  {:type "String"}}
            :data {
-              :name {:type "String"}
               :password {:type "String"}
               :salt {:type "Binary"}
               :creation-date {:type "Integer"}
               :last-connection {:type "Integer"}
-              :picture {:type "String"}}}
+              :picture {:type "File"}}}
   :qsdds {:keys {
               :id {:type "Index"}}
            :data {
