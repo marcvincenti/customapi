@@ -1,18 +1,27 @@
 # rAPId : build fast and strong APIs on AWS
 You can run it with `lein ring server-headless <port>`
 
+## TODOs
++ Check if the bucket you want to use is not owned by someone else
++ Update dynamoDB tables
++ Include Cognito
++ REST-handler
++ Clean up the mess
++ Use verifications
++ Let user add custom codes (wrappers, routines & routes)
+
 ## Configuration
 Use environment variables :
-+ AMZ_ACCESS : your amazon access key
-+ AMZ_SECRET : your amazon secret key
-+ AMZ_REGION : the region for dynamodb tables (_ex:_ eu-west-1)
++ AWS_ACCESS_KEY : your amazon access key
++ AWS_SECRET_ACCESS_KEY : your amazon secret key
++ AWS_DEFAULT_REGION : the region for dynamodb tables (_ex:_ eu-west-1)
 
 You have to provide a name to your app. 
 + With environment variables : APP_NAME
-+ Or with aws/set-app-name
++ Or with aws.core/set-app-name (_cf :_ clojure_rest/init)
 
 ## Usage 
-See **...** for now.
+See **clojure_rest/init** for now.
 
 ## Sides effects in AWS
 You have to provide a name to your app (_see app-name_).  

@@ -1,10 +1,7 @@
 (ns aws.dynamoDB
-	(:require [aws.data :as data]
+	(:require [aws.core :as core]
             [amazonica.aws.dynamodbv2 :as ddb 
-              :only [create-table list-tables delete-table]]))
-            
-(def ^:private cred 
-  {:endpoint (str "http://dynamodb." (System/getenv "AWS_REGION") ".amazonaws.com")})
+              :only [create-table list-tables delete-table describe-table]]))
 
 (def ^:private default-values
   "Some default value to provide to dynamodb"
@@ -18,7 +15,13 @@
       ("Binary") "B"
       ("Index" "Date" "Integer" "Float" "Double") "N"
       ("File" "String" "Char") "S"))
-     
+
+(defn ^:private update-table
+  "Update table to store the parameter object described in obj in the corresponding table"
+  [obj]
+  (let [table-name (name (first obj))]
+    (prn (ddb/describe-table :table-name table-name))))
+  
 (defn ^:private create-table
   "Create tables to store an object described in obj in a new dynamodb table"
   [obj]
@@ -73,23 +76,24 @@
     (assoc tablemap :global-secondary-indexes global-secondary-indexes)
     tablemap))))
       
-(defn update-db
+(defn set-db
   "Take a map of objects in parameters
    and update database to support this objects"
   [tables-map]
-  (let [ddb-tables (filter #(re-matches (re-pattern (str "^" @data/app-name "-(.*)$")) %) 
-                      (:table-names (ddb/list-tables cred)))
+  (let [ddb-tables (filter #(re-matches (re-pattern (str "^" @core/app-name "-(.*)$")) %) 
+                      (:table-names (ddb/list-tables)))
         objects-map (into {} (for [[k v] tables-map] 
-                              [(keyword (str @data/app-name "-" (name k))) v]))]
+                              [(keyword (str @core/app-name "-" (name k))) v]))]
     (doseq [tab (reduce-kv (fn [ddb-tables k v] 
                   (let [tab-name (-> k name)] 
                     (if-not (some #{tab-name} ddb-tables)
                       (do
                         (println (str "Create table \"" tab-name "\"."))
-                        (->> {k v} first create-table (ddb/create-table cred) future)
+                        (-> {k v} first create-table ddb/create-table future)
                         ddb-tables)
                       (do (println (str "Update table \"" tab-name "\"."))
+                        (->> {k v} first update-table)
                         (filter #(not= % tab-name) ddb-tables)))))
                   ddb-tables objects-map)]
       (do (println (str "Delete table \"" tab "\"."))
-        (->> tab (ddb/delete-table cred :table-name) future)))))
+        (->> tab (ddb/delete-table :table-name) future)))))

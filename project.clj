@@ -8,7 +8,7 @@
                  [clj-http "3.0.1"]
                  [amazonica "0.3.67"]]
   :plugins [[lein-ring "0.9.7"]]
-  :ring {:init aws.aws/init!
+  :ring {:init clojure-rest.init/init!
          :handler clojure-rest.handler/app}
   :profiles
   {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
