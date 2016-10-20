@@ -37,7 +37,7 @@
                                  {:attribute-name "creation-date" :attribute-type "N"} 
                                  {:attribute-name "last-connection" :attribute-type "N"}]
          :provisioned-throughput {:read-capacity-units 1 :write-capacity-units 2}
-         :global-secondary-indexes [{:index-name "index_email" 
+         :global-secondary-indexes [{:index-name "index_email_last-connection" 
                                      :key-schema [{:attribute-name "email" :key-type "HASH"} 
                                                   {:attribute-name "last-connection" :key-type "RANGE"}]
                                      :projection {:projection-type "ALL"}
