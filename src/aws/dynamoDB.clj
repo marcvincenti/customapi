@@ -1,5 +1,5 @@
 (ns aws.dynamoDB
-	(:require [aws.core :as core]
+	(:require [clojure.set :refer [intersection difference]]
             [amazonica.aws.dynamodbv2 :as ddb 
               :only [create-table list-tables delete-table describe-table]]))
    
@@ -62,13 +62,6 @@
                  :projection {:projection-type "ALL"}
                  :provisioned-throughput (dynamoDB-provisioned-throughput (second index))}))) 
         [] (rest (:keys (second obj)))))
-
-(defn ^:private update-table
-  "Update table to store the parameter object 
-   described in obj in the corresponding table"
-  [obj]
-  (let [table-name (name (first obj))]
-    (prn (ddb/describe-table :table-name table-name))))
   
 (defn ^:private create-table
   "Create tables to store an object described in obj in a new dynamodb table"
@@ -80,15 +73,35 @@
                   :provisioned-throughput (dynamoDB-provisioned-throughput (-> obj-keys first second))}]
   (if (empty? (rest obj-keys)) tablemap
     (assoc tablemap :global-secondary-indexes (dynamoDB-global-secondary-indexes obj)))))
+    
+(defn ^:private update-table
+  "Update table to store the parameter object 
+   described in obj in the corresponding table"
+  [obj aws-table]
+  (let [table-name (name (first obj))
+        in-aws-table (get aws-table :table)
+        update-fn (fn [originals news del-fn add-fn]
+                    (let [original-set (set originals)
+                          new-set (set news)
+                          to-keep (intersection original-set new-set)
+                          to-delete (difference original-set to-keep)
+                          to-add (difference new-set to-keep)]
+                      (do
+                        (if-not (empty? to-delete) (del-fn to-delete))
+                        (if-not (empty? to-add) (add-fn to-add)))))]
+    (update-fn (:attribute-definitions in-aws-table) 
+               (dynamoDB-attribute-definitions obj) 
+               (fn [s] (println (str "\tTo Delete  -> " s)))
+               (fn [s] (println (str "\tTo Add     -> " s))))))
       
 (defn set-db
   "Take a map of objects in parameters
    and update database to support this objects"
-  [tables-map]
-  (let [ddb-tables (filter #(re-matches (re-pattern (str "^" @core/app-name "-(.*)$")) %) 
+  [app-name tables-map]
+  (let [ddb-tables (filter #(re-matches (re-pattern (str "^" app-name "-(.*)$")) %) 
                       (:table-names (ddb/list-tables)))
         objects-map (into {} (for [[k v] tables-map] 
-                              [(keyword (str @core/app-name "-" (name k))) v]))]
+                              [(keyword (str app-name "-" (name k))) v]))]
     (doseq [tab (reduce-kv (fn [ddb-tables k v] 
                   (let [tab-name (-> k name)] 
                     (if-not (some #{tab-name} ddb-tables)
@@ -97,7 +110,7 @@
                         (-> {k v} first create-table ddb/create-table future)
                         ddb-tables)
                       (do (println (str "Update table \"" tab-name "\"."))
-                        (->> {k v} first update-table)
+                        (-> {k v} first (update-table (ddb/describe-table :table-name tab-name)))
                         (filter #(not= % tab-name) ddb-tables)))))
                   ddb-tables objects-map)]
       (do (println (str "Delete table \"" tab "\"."))

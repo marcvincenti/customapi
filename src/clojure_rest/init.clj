@@ -1,19 +1,18 @@
 (ns clojure-rest.init
   (:require [aws.dynamoDB :as dynamodb]
-            [aws.s3 :as s3]
-            [aws.core :as aws]))
+            [aws.s3 :as s3]))
+            
+(def app-name "rapid-framework")            
             
 (defn init! []
   "Initializing aws"
   (do
-    ;prefix name of all data initialized in the app.
-    (aws/set-app-name "rapid-framework")
   
     ;initializing S3
-    (s3/set-bucket "app-test")
+    (s3/set-bucket app-name "app-test")
       
     ;initializing DynamoDB
-    (dynamodb/set-db 
+    (dynamodb/set-db app-name
       {:users {:keys {
                   :id {:type "Index" 
                        :order-by :creation-date 

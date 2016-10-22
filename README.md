@@ -4,10 +4,10 @@ You can run it with `lein ring server-headless <port>`
 ## TODOs
 + Check if the bucket you want to use is not owned by someone else
 + Update dynamoDB tables
-+ Include Cognito
-+ REST-handler
++ Include Cognito + IAM + Lambda
 + Clean up the mess
-+ Use verifications
++ REST-handler
++ Use verifications (i.e. finish collate everything)
 + Let user add custom codes (wrappers, routines & routes)
 
 ## Configuration
@@ -15,10 +15,6 @@ Use environment variables :
 + AWS_ACCESS_KEY : your amazon access key
 + AWS_SECRET_ACCESS_KEY : your amazon secret key
 + AWS_DEFAULT_REGION : the region for dynamodb tables (_ex:_ eu-west-1)
-
-You have to provide a name to your app. 
-+ With environment variables : APP_NAME
-+ Or with aws.core/set-app-name (_cf :_ clojure_rest/init)
 
 ## Usage 
 See **clojure_rest/init** for now.
