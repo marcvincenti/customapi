@@ -2,7 +2,6 @@
 You can run it with `lein ring server-headless <port>`
 
 ## TODOs
-+ Check if the bucket you want to use is not owned by someone else
 + Update dynamoDB tables
 + Include Cognito + IAM + Lambda
 + Clean up the mess
