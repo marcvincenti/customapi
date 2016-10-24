@@ -1,12 +1,15 @@
 (ns clojure-rest.init
-  (:require [aws.dynamoDB :as dynamodb]
+  (:require [aws.cognito :as cognito]
+			[aws.dynamoDB :as dynamodb]
             [aws.s3 :as s3]))
             
-(def app-name "rapid-framework")            
+(def app-name "rapidframework")            
             
 (defn init! []
   "Initializing aws"
   (do
+	;initializing user authentication
+	(cognito/set-authentication app-name)
   
     ;initializing S3
     (s3/set-bucket app-name "app-test")

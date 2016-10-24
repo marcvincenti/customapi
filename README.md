@@ -3,9 +3,8 @@ You can run it with `lein ring server-headless <port>`
 
 ## TODOs
 + Update dynamoDB tables
-+ Include Cognito + IAM + Lambda
-+ Clean up the mess
-+ REST-handler
++ Include Cognito
++ REST-handler - With no links (verification+dynamodb; s3; cognito)
 + Use verifications (i.e. finish collate everything)
 + Let user add custom codes (wrappers, routines & routes)
 
