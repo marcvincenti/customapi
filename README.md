@@ -5,6 +5,7 @@ You can run it with `lein ring server-headless <port>`
 + Update dynamoDB tables
 + Include Cognito
 + REST-handler - With no links (verification+dynamodb; s3; cognito)
++ build a front-end
 + Use verifications (i.e. finish collate everything)
 + Let user add custom codes (wrappers, routines & routes)
 
@@ -14,7 +15,7 @@ Use environment variables :
 + AWS_SECRET_ACCESS_KEY : your amazon secret key
 + AWS_DEFAULT_REGION : the region for dynamodb tables (_ex:_ eu-west-1)
 
-## Usage 
+## Usage
 See **clojure_rest/init** for now.
 
 ## Sides effects in AWS

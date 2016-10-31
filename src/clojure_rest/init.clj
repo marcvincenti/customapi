@@ -2,23 +2,23 @@
   (:require [aws.cognito :as cognito]
 			[aws.dynamoDB :as dynamodb]
             [aws.s3 :as s3]))
-            
-(def app-name "rapidframework")            
-            
+
+(def app-name "rapidframework")
+
 (defn init! []
   "Initializing aws"
   (do
-	;initializing user authentication
-	(cognito/set-authentication app-name)
-  
+  	;initializing user authentication
+  	(cognito/set-authentication app-name)
+
     ;initializing S3
     (s3/set-bucket app-name "app-test")
-      
+
     ;initializing DynamoDB
     (dynamodb/set-db app-name
       {:users {:keys {
-                  :id {:type "Index" 
-                       :order-by :creation-date 
+                  :id {:type "Index"
+                       :order-by :creation-date
                        :provisioned-throughput {:read-capacity-units 1}}
                   :email {:type "String"
                           :order-by :last-connection }
