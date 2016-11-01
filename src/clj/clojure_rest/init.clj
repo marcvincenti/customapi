@@ -1,6 +1,6 @@
 (ns clojure-rest.init
   (:require [aws.cognito :as cognito]
-			[aws.dynamoDB :as dynamodb]
+            [aws.dynamoDB :as dynamodb]
             [aws.s3 :as s3]))
 
 (def app-name "rapidframework")

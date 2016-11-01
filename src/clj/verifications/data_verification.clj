@@ -14,9 +14,9 @@
 (defn check
   "check all the values passed in parameter with run-checks and return a concatened error string"
   [& args]
-    (let [wrong-entries 
-      (remove nil? 
-        (reduce #(let [{:keys [data function dataname required] 
+    (let [wrong-entries
+      (remove nil?
+        (reduce #(let [{:keys [data function dataname required]
                         :or {dataname "UNKNOW" required false}} %2
                       ret (if data
                             (run-checks function data)
@@ -25,16 +25,16 @@
                           (conj %1 ret)) [] args))]
       (when-not (empty? wrong-entries)
         (clojure.string/join "\n" wrong-entries))))
-      
+
 (defn isString?
   "return error string if not a string
    You can specify a regex (:regex) and an error message (:errmsg)"
   [x & {:keys [errmsg regex] :or {errmsg "Not a valid string."}}]
   (when (or (not (string? x))
           (and regex
-               (not (boolean (re-matches (re-pattern regex) x))))) 
+               (not (boolean (re-matches (re-pattern regex) x)))))
     errmsg))
-    
+
 (defn isNumber?
   "return error string if not a number
    You can specify a minimum (:min), a maximum (:max)
@@ -44,13 +44,13 @@
             (and max (> x max))
             (and min (< x min)))
     errmsg))
-    
+
 (defn isFile?
   "return error string if not a file
    You can specify a vector of authorized mime types (:types)
    and an error message (:errmsg)"
   [{:keys [content-type filename size tempfile]} & {:keys [errmsg types] :or {errmsg "Not a file."}}]
-  (when-not (and (instance? java.io.File tempfile) 
+  (when-not (and (instance? java.io.File tempfile)
                 (number? size)
                 (string? filename)
                 (and (string? content-type)

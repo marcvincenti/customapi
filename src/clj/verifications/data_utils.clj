@@ -5,12 +5,12 @@
   "Return string error if the email address is not valid, based on RFC 2822."
   [email]
   (isString? email
-    :errmsg "\"email\" is not RFC 2822 compliant." 
+    :errmsg "\"email\" is not RFC 2822 compliant."
     :regex (str "(?i)[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
                 "(?:\\.[a-z0-9!#$%&'*+/=?" "^_`{|}~-]+)*"
                 "@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+"
                 "[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")))
-                              
+
 (defn username?
   "Return string error if the username is not valid"
   [uname]
@@ -26,7 +26,7 @@
                 "ŔŘŖŚŜŠŞȘṢẞŤŢṬŦÞÚÙÛÜǓŬŪŨŰŮŲỤƯẂẀŴẄǷÝỲŶŸ"
                 "ȲỸƳŹŻŽẒŕřŗſśŝšşșṣßťţṭŧþúùûüǔŭūũűůųụưẃ"
                 "ẁŵẅƿýỳŷÿȳỹƴźżžẓ0-9’'‘ ]{4,32}")))
-                              
+
 (defn picture-uri?
   "Return a string error if picture uri isn't RFC 2396 compliant."
   [uri]
@@ -35,9 +35,9 @@
     :regex (str "(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*"
                 "\\.(?:jpg|jpeg|png))(?:\\?([^#]*))?(?:#"
                 "(.*))?")))
-                        
 
-(defn picture-file? 
+
+(defn picture-file?
   [f]
   (isFile? f
     :errmsg "The \"picture\" doesn't seem to be a jpeg or a png or an uri."

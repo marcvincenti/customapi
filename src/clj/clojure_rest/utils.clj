@@ -15,13 +15,13 @@
   "Like slurp but with binary files"
   [filename]
   (java.io.File. filename))
-  
+
 (defn make-error
   "Make an error response"
   [code msg]
   {:status code
    :body msg})
-   
+
 (defn timestamp
   "Return the actual unix timestamp in second"
   []

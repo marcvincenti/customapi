@@ -1,5 +1,6 @@
 # rAPId : build fast and strong APIs on AWS
-You can run it with `lein ring server-headless <port>`
+You can run it with `lein ring server-headless <port>`  
+or using `lein figwheel`
 
 ## TODOs
 + Update dynamoDB tables
