@@ -6,8 +6,9 @@
             [goog.history.EventType :as EventType]
             [reagent.core :as r]
             ;my pages
-            [pages.about.page :as about]
-            [pages.home.page :as home]))
+            [components.about :as about]
+            [components.home :as home]
+            [components.login :as login]))
 
 (def app-state (r/atom {}))
 
@@ -25,13 +26,14 @@
   (secretary/set-config! :prefix "#")
   (defroute "/" [] (swap! app-state assoc :page :home))
   (defroute "/about" [] (swap! app-state assoc :page :about))
+  (defroute "/login" [] (swap! app-state assoc :page :login))
   (hook-browser-navigation!))
 
 ;Current-page multimethod : return which page to display based on app-state
 (defmulti current-page #(@app-state :page))
-(defmethod current-page :home [] [home/page])
-(defmethod current-page :about [] [about/page])
-(defmethod current-page :default [] [:div ])
+(defmethod current-page :home [] [home/component])
+(defmethod current-page :about [] [about/component])
+(defmethod current-page :login [] [login/component])
 
 ;Root function to run cljs app
 (defn ^:export run []
