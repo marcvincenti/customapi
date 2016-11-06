@@ -9,20 +9,26 @@
                  [org.clojure/clojurescript "1.8.51"]
                  [compojure "1.5.1"]      ;ring wrapper
                  [reagent "0.6.0"]        ;react.js
+                 [cljs-http "0.1.42"]     ;ajax
                  [secretary "1.2.3"]      ;router for cljs
                  [ring/ring-json "0.4.0"] ;ring server
                  [amazonica "0.3.67"]]    ;aws java sdk clj wrapper
   :plugins [[lein-ring "0.9.7"]
-            [lein-figwheel "0.5.4-7"]]
+            [lein-cljsbuild "1.1.4"]]
   :ring {:init clojure-rest.init/init!
          :handler clojure-rest.handler/app}
-  :figwheel {:ring-handler clojure-rest.handler/app}
-  :cljsbuild {:builds [{:id "front-end"
+  :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src/cljs/"]
-                        :figwheel true
-                        :compiler {:main "app.core"
-                                   :asset-path "js/out"
-                                   :output-to "resources/public/js/app.js"
-                                   :output-dir "resources/public/js/out"}}]}
+                        :compiler     {:main app.core
+                                       :asset-path "js/out"
+                                       :output-to "resources/public/js/app.js"
+                                       :output-dir "resources/public/js/out"}}
+                       {:id           "prod"
+                        :source-paths ["src/cljs/"]
+                        :compiler {:main            app.core
+                                   :output-to       "resources/public/js/app.js"
+                                   :optimizations   :advanced
+                                   :closure-defines {goog.DEBUG false}
+                                   :pretty-print    false}}]}
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                  [ring/ring-mock "0.3.0"]]}})

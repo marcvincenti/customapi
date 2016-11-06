@@ -1,12 +1,15 @@
 # Whatever name it has
-You can run it with `lein ring server-headless <port>`  
-or using `lein figwheel` to use front-end for now.
+You can run it with :
+```
+lein clean
+lein cljsbuild [auto|once] [dev|prod]
+lein ring server-headless
+```
 
 ## TODOs
 + Add a menu
 + Connection (sort of?) -> including looking for project
 + Objects page (to update dynamoDB tables)
-+ merge `figwheel` & `ring server`
 + Update dynamoDB tables
 + Include Cognito
 + REST-handler - With no links (verification+dynamodb; s3; cognito)

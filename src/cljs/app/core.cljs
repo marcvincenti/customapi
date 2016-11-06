@@ -5,12 +5,11 @@
             [goog.events :as events]
             [goog.history.EventType :as EventType]
             [reagent.core :as r]
+            [app.state :refer [app-state]]
             ;my pages
             [components.about :as about]
             [components.home :as home]
             [components.login :as login]))
-
-(def app-state (r/atom {}))
 
 ;Adding Browser History
 (defn hook-browser-navigation! []
@@ -35,8 +34,13 @@
 (defmethod current-page :about [] [about/component])
 (defmethod current-page :login [] [login/component])
 
+;initializing the app
+(defn init []
+  (app-routes)
+  (login/init))
+
 ;Root function to run cljs app
 (defn ^:export run []
-  (app-routes)
+  (init)
   (r/render [current-page]
     (.getElementById js/document "app-container")))

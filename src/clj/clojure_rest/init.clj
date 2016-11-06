@@ -7,7 +7,7 @@
 
 (defn init! []
   "Initializing aws"
-  (do
+  (comment
   	;initializing user authentication
   	(cognito/set-authentication app-name)
 

@@ -1,6 +1,18 @@
-(ns components.login)
+(ns components.login
+  (:require [cljs-http.client :as http]
+            [cljs.core.async :refer [<!]]
+            [app.state :refer [app-state]])
+  (:require-macros [cljs.core.async.macros :refer [go]]))
 
-(defn login-form []
+(defn ^:private get-regions []
+  (go
+    (let [response (<! (http/get "http://localhost:3000/api/regions"))]
+      (swap! app-state assoc :list-regions (:body response)))))
+
+(defn init []
+  (get-regions))
+
+(defn ^:private login-form []
   [:form {:class "form-horizontal"}
   [:div {:class "form-group"}
     [:label {:for "inputEmail" :class "col-sm-2 control-label"} "Email"]
@@ -17,6 +29,7 @@
     [:label {:for "inputRegion" :class "col-sm-2 control-label"} "Region"]
     [:div {:class "col-sm-10"}
       [:select {:multiple "" :class "form-control" :id "inputRegion"}
+        (map #(%) (:list-regions @app-state))
         [:option "1"]
         [:option "2"]
         [:option "3"]
@@ -32,4 +45,5 @@
     [:ul
       [:li [:a {:href "#/"} "home page"]]
       [:li [:a {:href "#/about"} "about page"]]]
-      [login-form]])
+      [login-form]
+      [:div {:class "autres"} (:list-regions @app-state)]])

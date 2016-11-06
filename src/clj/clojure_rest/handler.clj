@@ -5,7 +5,7 @@
             [clojure-rest.wrappers :as wps]
             [clojure-rest.routes :as routes]))
 
-(def app (->  routes/api
+(def app (->  routes/app
               wps/decode-params
               wrap-multipart-params
               wrap-params
