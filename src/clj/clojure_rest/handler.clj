@@ -6,8 +6,9 @@
             [clojure-rest.routes :as routes]))
 
 (def app (->  routes/app
-              wps/decode-params
-              wrap-multipart-params
-              wrap-params
-              (wrap-json-response {:pretty true})
-              wps/allow-cross-origin))
+              ;wps/decode-params
+              ;wrap-multipart-params
+              ;wrap-params
+              wrap-json-response
+              ;wps/allow-cross-origin
+              ))

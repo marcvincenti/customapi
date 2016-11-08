@@ -34,13 +34,8 @@
 (defmethod current-page :about [] [about/component])
 (defmethod current-page :login [] [login/component])
 
-;initializing the app
-(defn init []
-  (app-routes)
-  (login/init))
-
 ;Root function to run cljs app
 (defn ^:export run []
-  (init)
+  (app-routes)
   (r/render [current-page]
     (.getElementById js/document "app-container")))

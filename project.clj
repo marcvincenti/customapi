@@ -9,7 +9,7 @@
                  [org.clojure/clojurescript "1.8.51"]
                  [compojure "1.5.1"]      ;ring wrapper
                  [reagent "0.6.0"]        ;react.js
-                 [cljs-http "0.1.42"]     ;ajax
+                 [cljs-ajax "0.2.6"]      ;ajax
                  [secretary "1.2.3"]      ;router for cljs
                  [ring/ring-json "0.4.0"] ;ring server
                  [amazonica "0.3.67"]]    ;aws java sdk clj wrapper
