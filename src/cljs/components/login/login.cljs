@@ -1,39 +1,34 @@
 (ns components.login
-  (:require [ajax.core :refer [GET]]
-            [reagent.core :as r]))
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require [reagent.core :as r]
+            [cljs-http.client :as http]
+            [cljs.core.async :refer [<!]]))
 
 (def region-list (r/atom {}))
 
 (defn ^:private login-form []
-
-  (GET "/api/regions"
-    {:handler (fn [response]
-                (.log js/console (str response))
-                (reset! region-list response))})
+  (go (swap! region-list assoc :list (get-in (<! (http/get "/api/regions")) [:body :data])))
 
   [:form {:class "form-horizontal"}
   [:div {:class "form-group"}
-    [:label {:for "inputEmail" :class "col-sm-2 control-label"} "Email"]
+    [:label {:for "inputAccessKey" :class "col-sm-2 control-label"} "Access key"]
     [:div {:class "col-sm-10"}
-      [:input {:type "text" :id "inputEmail" :class "form-control"
-               :placeholder "Email address" :required ""}]]]
+      [:input {:type "text" :id "inputAccessKey" :class "form-control"
+               :placeholder "Access key" :required ""}]]]
 
   [:div {:class "form-group"}
-    [:label {:for "inputPassword" :class "col-sm-2 control-label"} "Password"]
+    [:label {:for "inputSecretAccessKey" :class "col-sm-2 control-label"} "Secret access key"]
     [:div {:class "col-sm-10"}
-      [:input {:type "password" :id "inputPassword" :class "form-control"
-               :placeholder "Password" :required ""}]]]
+      [:input {:type "password" :id "inputSecretAccessKey" :class "form-control"
+               :placeholder "Secret access key" :required ""}]]]
+
   [:div {:class "form-group"}
     [:label {:for "inputRegion" :class "col-sm-2 control-label"} "Region"]
     [:div {:class "col-sm-10"}
       [:select {:multiple "" :class "form-control" :id "inputRegion"}
-        [:option "1"]
-        [:option "2"]
-        [:option "3"]
-        [:option "4"]
-        [:option "5"]]]]
-
-[:div {:class "autres"} @region-list]
+        (for [reg (:list @region-list)] ^{:key reg}
+          [:option {:value (:value reg)} (:name reg)])
+      ]]]
 
   [:div {:class "form-group"}
     [:div {:class "col-sm-offset-2 col-sm-10"}
