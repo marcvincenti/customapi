@@ -1,5 +1,6 @@
 (ns aws.core
-  (:require [ring.util.response :refer [response]]))
+  (:require [ring.util.response :refer [response]]
+            [amazonica.aws.s3 :as s3 :only [list-buckets]]))
 
 (defn list-regions
   "Return the list of available regions in aws"
@@ -14,5 +15,9 @@
 
 (defn login
   "Check provided data"
-  []
-  (response {:data "The dev is too lazy to do it tonight..."}))
+  [cred]
+  (response
+    (try
+      (s3/list-buckets cred)
+      (response "Ok :)")
+      (catch Exception e (response "Not Ok :(")))))

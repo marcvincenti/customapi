@@ -9,7 +9,7 @@
   {:status 404 :body "Ressource not found :("})
 
 (defroutes ^:private api
-  (POST "/login" [] (aws/login))
+  (POST "/login" {params :params} (aws/login params))
   (GET  "/regions" [] (aws/list-regions)))
 
 (defroutes app

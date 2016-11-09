@@ -8,7 +8,7 @@
 (def app (->  routes/app
               ;wps/decode-params
               ;wrap-multipart-params
-              ;wrap-params
+              wrap-params
               wrap-json-response
               ;wps/allow-cross-origin
               ))
