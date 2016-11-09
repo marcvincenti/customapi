@@ -10,26 +10,25 @@
                       (get-in (<! (http/get "/api/regions")) [:body :data]))))]
   (get-regions)
   (fn []
-    [:form {:class "form-horizontal"}
-    [:div {:class "form-group"}
-      [:label {:for "inputAccessKey" :class "col-sm-2 control-label"} "Access key"]
-      [:div {:class "col-sm-10"}
+    [:form {:class "form-horizontal form-group col-sm-12"}
+      [:div {:class "form-group"}
         [:input {:type "text" :id "inputAccessKey" :class "form-control"
-                 :placeholder "Access key" :required ""}]]]
-    [:div {:class "form-group"}
-      [:label {:for "inputSecretAccessKey" :class "col-sm-2 control-label"} "Secret access key"]
-      [:div {:class "col-sm-10"}
-        [:input {:type "password" :id "inputSecretAccessKey" :class "form-control"
-                 :placeholder "Secret access key" :required ""}]]]
-    [:div {:class "form-group"}
-      [:label {:for "inputRegion" :class "col-sm-2 control-label"} "Region"]
-      [:div {:class "col-sm-10"}
+                 :placeholder "Access key" :required ""}]]
+      [:div {:class "form-group"}
+        [:input {:type "password" :id "inputSecretAccessKey"
+                 :class "form-control" :placeholder "Secret access key"
+                 :required ""}]]
+      [:div {:class "form-group"}
         [:select {:multiple "" :class "form-control" :id "inputRegion"}
           (for [reg (:list @region-list)] ^{:key reg}
-            [:option {:value (:value reg)} (:name reg)])]]]
-    [:div {:class "form-group"}
-      [:div {:class "col-sm-offset-2 col-sm-10"}
-        [:button {:type "submit" :class "btn btn-default"} "Login"]]]])))
+            [:option {:value (:value reg)} (:name reg)])]]
+      [:div {:class "form-group"}
+        [:label [:input {:id "inputRemember" :type "checkbox"
+                         :defaultChecked true}]
+          " Remember me"]]
+      [:div {:class "form-group"}
+        [:button {:type "submit" :class "btn btn-success btn-block"}
+          "Login"]]])))
 
 (defn component []
   [:div [:h1 "Login Page"]
