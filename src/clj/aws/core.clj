@@ -1,5 +1,5 @@
 (ns aws.core
-  (:require [ring.util.response :refer [response]]
+  (:require [ring.util.response :refer [response status]]
             [amazonica.aws.s3 :as s3 :only [list-buckets]]))
 
 (defn list-regions
@@ -16,8 +16,7 @@
 (defn login
   "Check provided data"
   [cred]
-  (response
     (try
       (s3/list-buckets cred)
       (response "Ok :)")
-      (catch Exception e (response "Not Ok :(")))))
+      (catch Exception e (status (response "Invalid credentials.") 403))))
