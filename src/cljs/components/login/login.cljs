@@ -1,6 +1,7 @@
 (ns components.login
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [reagent.core :as r]
+            [secretary.core :refer [dispatch!]]
             [app.state :refer [app-state]]
             [cljs-http.client :as http]
             [cljs.core.async :refer [<!]]))
@@ -25,33 +26,33 @@
                       (get-in (<! (http/get "/api/regions")) [:body :data]))))]
   (get-regions)
   (fn []
-    [:form {:class "form-horizontal form-group col-sm-12"}
-      [:div {:class "form-group"}
-        [:input {:type "text" :id "inputAccessKey" :class "form-control"
-                 :on-change #(reset! access-key (-> % .-target .-value ))
-                 :placeholder "Access key" :value @access-key :required ""}]]
-      [:div {:class "form-group"}
-        [:input {:type "password" :id "inputSecretKey"
-                 :class "form-control" :placeholder "Secret key"
-                 :on-change #(reset! secret-key (-> % .-target .-value ))
-                 :required "" :value @secret-key}]]
-      [:div {:class "form-group"}
-        [:select {:multiple "" :class "form-control" :id "inputRegion"}
-          (for [reg (:list @region-list)] ^{:key reg}
-            [:option {:value (:value reg)} (:name reg)])]]
-      [:div {:class "form-group"}
-        [:label [:input {:id "inputRemember" :type "checkbox"
-                         :defaultChecked true}]
-          " Remember me"]]
-      [:div {:class "form-group"}
-        [:button {:on-click #(login access-key secret-key)
-                  :class "btn btn-success btn-block"}
-          "Login"]]])))
+    [:div {:class "panel panel-primary"}
+      [:div {:class "panel-heading"} "Please Login"]
+      [:div {:class "panel-body"}
+        [:form {:class "form-horizontal form-group col-sm-12"}
+          [:div {:class "form-group"}
+            [:input {:type "text" :id "inputAccessKey"
+                     :class "form-control" :placeholder "Access key"
+                     :on-change #(reset! access-key (-> % .-target .-value))
+                     :required "" :value @access-key}]]
+          [:div {:class "form-group"}
+            [:input {:type "password" :id "inputSecretKey"
+                     :class "form-control" :placeholder "Secret key"
+                     :on-change #(reset! secret-key (-> % .-target .-value ))
+                     :required "" :value @secret-key}]]
+          [:div {:class "form-group"}
+            [:select {:multiple "" :class "form-control" :id "inputRegion"}
+              (for [reg (:list @region-list)] ^{:key reg}
+                [:option {:value (:value reg)} (:name reg)])]]
+          [:div {:class "form-group"}
+            [:label [:input {:id "inputRemember" :type "checkbox"
+                             :defaultChecked true}]
+              " Remember me"]]
+          [:div {:class "form-group"}
+            [:button {:on-click #(login access-key secret-key)
+                      :class "btn btn-success btn-block" :type "submit"}
+              "Login"]]]]])))
 
 (defn component []
   [:div [:h1 "Login Page"]
-    [:ul
-      [:li [:a {:href "#/"} "home page"]]
-      [:li [:a {:href "#/about"} "about page"]]]
-      [login-form]
-      (str (deref app-state))])
+    [login-form]])

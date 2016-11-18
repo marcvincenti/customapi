@@ -7,14 +7,15 @@ lein ring server-headless
 ```
 
 ## TODOs
-+ Add a menu
-+ Connection (sort of?) -> including looking for project
++ Projects page
++ Auth guards & improving routing
 + Objects page (to update dynamoDB tables)
-+ Update dynamoDB tables
-+ Include Cognito
-+ REST-handler - With no links (verification+dynamodb; s3; cognito)
++ DynamoDB tables
++ S3
++ REST-handler (lambda)
++ Cognito
 + Use verifications (i.e. finish collate everything)
-+ Let user add custom codes (wrappers, routines & routes)
++ User functions (wrappers, routines & routes)
 
 ## Configuration
 Use environment variables :
