@@ -9,7 +9,8 @@
             ;my pages
             [components.about :as about]
             [components.home :as home]
-            [components.login :as login]))
+            [components.login :as login]
+            [components.menu-bar :as menu-bar]))
 
 ;Adding Browser History
 (defn hook-browser-navigation! []
@@ -37,5 +38,6 @@
 ;Root function to run cljs app
 (defn ^:export run []
   (app-routes)
+  (r/render menu-bar/component (.getElementById js/document "menu-bar"))
   (r/render [current-page]
     (.getElementById js/document "app-container")))
