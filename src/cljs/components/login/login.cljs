@@ -8,20 +8,15 @@
 
 (defn ^:private login
   "Log a user with AWS credentials"
-  [access-key secret-access-key]
-  (go (let [creds {:access-key @access-key
-                   :secret-key @secret-access-key}
-            response (<! (http/post "/api/login" {:form-params creds}))]
+  []
+  (go (let [response (<! (http/post "/api/login" {:form-params (get @app-state :creds)}))]
     (if (:success response)
-      (swap! app-state assoc :creds creds
-                             :projects (get-in response [:body :projects])
+      (swap! app-state assoc :projects (get-in response [:body :projects])
                              :page :home)
-      (reset! secret-access-key "")))))
+      (swap! app-state assoc-in [:creds :secret-key] "")))))
 
 (defn ^:private login-form []
   (let [region-list (r/atom {})
-        access-key (r/atom "")
-        secret-key (r/atom "")
         get-regions (fn [] (go (swap! region-list assoc :list
                       (get-in (<! (http/get "/api/regions")) [:body :data]))))]
   (get-regions)
@@ -31,15 +26,17 @@
       [:div {:class "panel-body"}
         [:form {:class "form-horizontal form-group col-sm-12"}
           [:div {:class "form-group"}
-            [:input {:type "text" :id "inputAccessKey"
+            [:input {:type "text" :id "inputAccessKey" :required ""
                      :class "form-control" :placeholder "Access key"
-                     :on-change #(reset! access-key (-> % .-target .-value))
-                     :required "" :value @access-key}]]
+                     :on-change #(swap! app-state assoc-in [:creds :access-key]
+                                  (-> % .-target .-value))
+                     :value (get-in @app-state [:creds :access-key])}]]
           [:div {:class "form-group"}
-            [:input {:type "password" :id "inputSecretKey"
+            [:input {:type "password" :id "inputSecretKey" :required ""
                      :class "form-control" :placeholder "Secret key"
-                     :on-change #(reset! secret-key (-> % .-target .-value ))
-                     :required "" :value @secret-key}]]
+                     :on-change #(swap! app-state assoc-in [:creds :secret-key]
+                                  (-> % .-target .-value ))
+                     :value (get-in @app-state [:creds :secret-key])}]]
           [:div {:class "form-group"}
             [:select {:multiple "" :class "form-control" :id "inputRegion"}
               (for [reg (:list @region-list)] ^{:key reg}
@@ -49,8 +46,8 @@
                              :defaultChecked true}]
               " Remember me"]]
           [:div {:class "form-group"}
-            [:button {:on-click #(login access-key secret-key)
-                      :class "btn btn-success btn-block" :type "submit"}
+            [:button {:on-click login
+                      :class "btn btn-success btn-block" :type "button"}
               "Login"]]]]])))
 
 (defn component []
