@@ -1,19 +1,10 @@
 (ns components.login
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [reagent.core :as r]
-            [secretary.core :refer [dispatch!]]
             [app.state :refer [app-state]]
+            [providers.auth :as auth]
             [cljs-http.client :as http]
             [cljs.core.async :refer [<!]]))
-
-(defn ^:private login
-  "Log a user with AWS credentials"
-  []
-  (go (let [response (<! (http/post "/api/login" {:form-params (get @app-state :creds)}))]
-    (if (:success response)
-      (swap! app-state assoc :projects (get-in response [:body :projects])
-                             :page :home)
-      (swap! app-state assoc-in [:creds :secret-key] "")))))
 
 (defn ^:private login-form []
   (let [region-list (r/atom {})
@@ -46,7 +37,7 @@
                              :defaultChecked true}]
               " Remember me"]]
           [:div {:class "form-group"}
-            [:button {:on-click login
+            [:button {:on-click auth/login
                       :class "btn btn-success btn-block" :type "button"}
               "Login"]]]]])))
 
