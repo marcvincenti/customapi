@@ -3,4 +3,5 @@
 
 (defn component []
   [:div [:h1 "About Page"]
-    (str @app-state)])
+    [:p "For DEBUG purpose : "
+      (str @app-state)]])

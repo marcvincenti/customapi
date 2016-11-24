@@ -20,6 +20,8 @@
 
           [:ul {:class "nav navbar-nav"}
             [:li (active? :home) [:a {:href "#/"} "Home"]]
+            (when (:connected @app-state)
+            [:li (active? :projects) [:a {:href "#/projects"} "Projects"]])
             [:li (active? :about) [:a {:href "#/about"} "About"]]]
 
           [:ul {:class "nav navbar-nav navbar-right"}

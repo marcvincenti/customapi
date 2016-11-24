@@ -15,6 +15,7 @@
   (go (let [response (<! (http/post "/api/login" {:form-params (get @app-state :creds)}))]
     (if (:success response)
       (swap! app-state assoc :projects (get-in response [:body :projects])
+                             :page :projects
                              :connected true)
       (swap! app-state assoc-in [:creds :secret-key] "")))))
 

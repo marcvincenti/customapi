@@ -19,7 +19,7 @@
   [cred]
   (let [group "myawesomeapi"]
     (try
-      (response {:projects (:users (iam/get-group cred {:group-name group}))})
+      (response {:projects (map #(dissoc % :create-date) (get (iam/get-group cred {:group-name group}) :users))})
       (catch Exception e (let [err (ex->map e)]
         (if (= "NoSuchEntity" (:error-code err))
           (try

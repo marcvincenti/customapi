@@ -11,7 +11,8 @@
             ;my pages
             [components.about :as about]
             [components.home :as home]
-            [components.login :as login]))
+            [components.login :as login]
+            [components.projects :as projects]))
 
 ;Adding Browser History
 (defn hook-browser-navigation! []
@@ -28,13 +29,16 @@
   (defroute "/" [] (swap! app-state assoc :page :home))
   (defroute "/about" [] (swap! app-state assoc :page :about))
   (defroute "/login" [] (swap! app-state assoc :page :login))
+  (defroute "/projects" [] (swap! app-state assoc :page :projects))
   (hook-browser-navigation!))
 
 ;Current-page multimethod : return which page to display based on app-state
 (defmulti current-page #(@app-state :page))
 (defmethod current-page :home [] [home/component])
 (defmethod current-page :about [] [about/component])
-(defmethod current-page :login [] [login/component])
+(defmethod current-page :login  [] [login/component])
+(defmethod current-page :projects  [] [projects/component])
+(defmethod current-page :default  [] [:div])
 
 ;Root function to run cljs app
 (defn ^:export run []
