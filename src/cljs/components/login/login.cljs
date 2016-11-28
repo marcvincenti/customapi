@@ -8,6 +8,7 @@
 
 (defn ^:private login-form []
   (let [region-list (r/atom {})
+        loading (r/atom false)
         get-regions (fn [] (go (swap! region-list assoc :list
                       (get-in (<! (http/get "/api/regions")) [:body :data]))))]
   (get-regions)
@@ -17,17 +18,19 @@
       [:div {:class "panel-body"}
         [:form {:class "form-horizontal form-group col-sm-12"}
           [:div {:class "form-group"}
-            [:input {:type "text" :id "inputAccessKey" :required ""
+            [:input (into {:type "text" :id "inputAccessKey" :required ""
                      :class "form-control" :placeholder "Access key"
                      :on-change #(swap! app-state assoc-in [:creds :access-key]
                                   (-> % .-target .-value))
-                     :value (get-in @app-state [:creds :access-key])}]]
+                     :value (get-in @app-state [:creds :access-key])}
+                     (when @loading {:disabled "disabled"}))]]
           [:div {:class "form-group"}
-            [:input {:type "password" :id "inputSecretKey" :required ""
+            [:input (into {:type "password" :id "inputSecretKey" :required ""
                      :class "form-control" :placeholder "Secret key"
                      :on-change #(swap! app-state assoc-in [:creds :secret-key]
                                   (-> % .-target .-value ))
-                     :value (get-in @app-state [:creds :secret-key])}]]
+                     :value (get-in @app-state [:creds :secret-key])}
+                     (when @loading {:disabled "disabled"}))]]
           [:div {:class "form-group"}
             [:select {:multiple "" :class "form-control" :id "inputRegion"}
               (for [reg (:list @region-list)] ^{:key reg}
@@ -37,9 +40,10 @@
                              :defaultChecked true}]
               " Remember me"]]
           [:div {:class "form-group"}
-            [:button {:on-click auth/login
-                      :class "btn btn-success btn-block" :type "button"}
-              "Login"]]]]])))
+            [:button {:on-click #(auth/login loading) :type "button"
+                      :class (str "btn btn-success btn-block"
+                        (when @loading " disabled"))}
+              (if @loading "Connecting..." "Login")]]]]])))
 
 (defn component []
   [:div [:h1 "Login Page"]

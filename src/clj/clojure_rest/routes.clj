@@ -10,6 +10,7 @@
 
 (defroutes ^:private api
   (POST "/login" {params :params} (aws/get-projects params))
+  (GET "/projects" {params :params} (aws/get-projects params))
   (GET  "/regions" [] (aws/list-regions)))
 
 (defroutes app
