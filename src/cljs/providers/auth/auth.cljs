@@ -6,16 +6,30 @@
             [app.state :refer [app-state]]
             [providers.cookies :as cookies]))
 
+(defn retrieve-session
+  "Retry to connect from an od session stored in cookies"
+  []
+  (let [creds (cookies/get :session)]
+    (when creds
+      (go (let [response (<! (http/post "/api/login" {:form-params creds}))]
+        (when (:success response)
+          (swap! app-state assoc :projects (get-in response [:body :projects])
+                                 :creds creds
+                                 :connected true)))))))
+
 (defn login
   "Log a user with AWS credentials"
-  [loading error]
+  [remember loading error]
   (reset! loading true)
   (go (let [response (<! (http/post "/api/login" {:form-params (get @app-state :creds)}))]
     (if (:success response)
       ;login success
-      (swap! app-state assoc :projects (get-in response [:body :projects])
-                             :page :projects
-                             :connected true)
+      (do
+        (swap! app-state assoc :projects (get-in response [:body :projects])
+                               :page :projects
+                               :connected true)
+        (when remember
+          (cookies/set :session (get @app-state :creds))))
       ;login failed
       (do (swap! app-state assoc-in [:creds :secret-key] "")
         (reset! error true)))
@@ -24,4 +38,6 @@
 (defn logout
   "Log the user out"
   []
-  (swap! app-state dissoc :creds :connected :projects))
+  (do
+    (cookies/remove :session)
+    (swap! app-state dissoc :creds :connected :projects)))

@@ -6,6 +6,7 @@
             [goog.history.EventType :as EventType]
             [reagent.core :as r]
             [app.state :refer [app-state]]
+            [providers.auth :as auth]
             ;navbar
             [components.menu-bar :as menu-bar]
             ;my pages
@@ -43,6 +44,7 @@
 ;Root function to run cljs app
 (defn ^:export run []
   (app-routes)
+  (auth/retrieve-session)
   (r/render [menu-bar/component] (.getElementById js/document "menu-bar"))
   (r/render [current-page]
     (.getElementById js/document "app-container")))
