@@ -9,10 +9,10 @@
             ;navbar
             [components.menu-bar :as menu-bar]
             ;my pages
-            [components.about :as about]
-            [components.home :as home]
-            [components.login :as login]
-            [components.projects :as projects]))
+            [pages.about :as about]
+            [pages.home :as home]
+            [pages.login :as login]
+            [pages.projects :as projects]))
 
 ;Adding Browser History
 (defn hook-browser-navigation! []

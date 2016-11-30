@@ -1,21 +1,19 @@
-(ns components.login
-  (:require-macros [cljs.core.async.macros :refer [go]])
+(ns pages.login
   (:require [reagent.core :as r]
             [app.state :refer [app-state]]
-            [providers.auth :as auth]
-            [cljs-http.client :as http]
-            [cljs.core.async :refer [<!]]))
+            [components.alerts :as alerts]
+            [providers.auth :as auth]))
 
 (defn ^:private login-form []
-  (let [region-list (r/atom {})
+  (let [remember-me (r/atom true)
         loading (r/atom false)
-        get-regions (fn [] (go (swap! region-list assoc :list
-                      (get-in (<! (http/get "/api/regions")) [:body :data]))))]
-  (get-regions)
+        error? (r/atom false)]
   (fn []
     [:div {:class "panel panel-primary"}
       [:div {:class "panel-heading"} "Please Login"]
       [:div {:class "panel-body"}
+      (alerts/danger error?
+        "We are unable to connect you with this credentials.")
         [:form {:class "form-horizontal form-group col-sm-12"}
           [:div {:class "form-group"}
             [:input (into {:type "text" :id "inputAccessKey" :required ""
@@ -32,15 +30,13 @@
                      :value (get-in @app-state [:creds :secret-key])}
                      (when @loading {:disabled "disabled"}))]]
           [:div {:class "form-group"}
-            [:select {:multiple "" :class "form-control" :id "inputRegion"}
-              (for [reg (:list @region-list)] ^{:key reg}
-                [:option {:value (:value reg)} (:name reg)])]]
-          [:div {:class "form-group"}
             [:label [:input {:id "inputRemember" :type "checkbox"
-                             :defaultChecked true}]
+                             :defaultChecked @remember-me
+                             :on-change #(reset! remember-me
+                                (-> % .-target .-value))}]
               " Remember me"]]
           [:div {:class "form-group"}
-            [:button {:on-click #(auth/login loading) :type "button"
+            [:button {:on-click #(auth/login loading error?) :type "button"
                       :class (str "btn btn-success btn-block"
                         (when @loading " disabled"))}
               (if @loading "Connecting..." "Login")]]]]])))

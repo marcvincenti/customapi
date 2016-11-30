@@ -1,4 +1,4 @@
-(ns components.about
+(ns pages.about
   (:require [app.state :refer [app-state]]))
 
 (defn component []

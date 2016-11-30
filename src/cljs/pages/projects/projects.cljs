@@ -1,4 +1,4 @@
-(ns components.projects
+(ns pages.projects
   (:require [reagent.core :as r]
             [app.state :refer [app-state]]
             [providers.projects :as projects]))
