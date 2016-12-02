@@ -8,10 +8,14 @@
 (defn ^:private four-oh-four-page []
   {:status 404 :body "Ressource not found :("})
 
+(defroutes ^:private projects
+  (GET "/" {params :params} (aws/get-projects params))
+  (POST  "/" {params :params} (aws/create-project params)))
+
 (defroutes ^:private api
   (POST "/login" {params :params} (aws/get-projects params))
-  (GET "/projects" {params :params} (aws/get-projects params))
-  (GET  "/regions" [] (aws/list-regions)))
+  (GET  "/regions" [] (aws/list-regions))
+  (context "/projects" [] projects))
 
 (defroutes app
   (GET  "/" [] (resource-response "index.html" {:root "public"}))

@@ -36,7 +36,8 @@
                                (not @remember-me))}]
               " Remember me"]]
           [:div {:class "form-group"}
-            [:button {:on-click #(auth/login @remember-me loading? error?) :type "button"
+            [:button {:on-click #(auth/login @remember-me loading? error?)
+                      :type "button"
                       :class (str "btn btn-success btn-block"
                         (when @loading? " disabled"))}
               (if @loading? "Connecting..." "Login")]]]]])))

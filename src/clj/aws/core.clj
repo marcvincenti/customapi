@@ -2,7 +2,9 @@
   (:require [ring.util.response :refer [response status]]
             [amazonica.core :refer [ex->map]]
             [amazonica.aws.identitymanagement :as iam
-              :only [get-group create-group create-user]]))
+              :only [get-group list-users create-user]]))
+              
+(def aws-path "/serverless/")
 
 (defn list-regions
   "Return the list of available regions in aws"
@@ -21,21 +23,15 @@
   (let [group "myawesomeapi"]
     (try
       (response {:projects (map #(update-in % [:create-date] str)
-                        (get (iam/get-group cred {:group-name group}) :users))})
+          (get (iam/list-users cred {:path-prefix aws-path}) :users))})
       (catch Exception e (let [err (ex->map e)]
-        (if (= "NoSuchEntity" (:error-code err))
-          (try
-            (do
-              (iam/create-group cred {:group-name group})
-              (response {:projects []}))
-            (catch Exception e (let [err (ex->map e)]
-              (status (response (:message err)) (:status-code err)))))
-          (status (response (:message err)) (:status-code err))))))))
+        (status (response (:message err)) (:status-code err)))))))
 
-(defn add-project
+(defn create-project
   "Add a new project"
-  [cred goup user]
+  [{:keys [access-key secret-key name]}]
+  (let [creds {:access-key access-key :secret-key secret-key}]
   (try
-    (iam/create-user cred {:user-name user :path "/user/myawesomeapi"})
+    (iam/create-user creds {:user-name name :path aws-path})
   (catch Exception e (let [err (ex->map e)]
-    (status (response (:message err)) (:status-code err))))))
+    (status (response (:message err)) (:status-code err)))))))

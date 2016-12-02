@@ -25,7 +25,8 @@
             [:ul {:class "nav navbar-nav navbar-right"}
               (if (:connected @app-state)
                 [:li [:a {:href "#/" :on-click auth/logout}
-                  "Logout " [:span {:class "glyphicon glyphicon-log-out"}]]]
+                  "Logout "
+                  [:span {:class "glyphicon glyphicon-log-out"}]]]
                 [:li (active? :login) [:a {:href "#/login"}
-                  [:span {:class "glyphicon glyphicon-log-in"}] " Login"]])
-              ]]]]))
+                  [:span {:class "glyphicon glyphicon-log-in"}]
+                  " Login"]])]]]]))

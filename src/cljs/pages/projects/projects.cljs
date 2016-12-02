@@ -3,34 +3,47 @@
             [app.state :refer [app-state]]
             [providers.projects :as projects]))
 
-(defn add-project-modal [id-modal]
-  [:div {:class "modal fade" :id id-modal :tabIndex "-1" :role "dialog"
-         :aria-labelledby "addProjectModalLabel"}
-    [:div {:class "modal-dialog" :role "document"}
-      [:div {:class "modal-content"}
-        [:div {:class "modal-header"}
-          [:button {:type "button" :class "close"
-                    :data-dismiss "modal" :aria-label "Close"}
-            [:span {:aria-hidden "true"} "x"]]
-          [:h4 {:class "modal-title" :id "addProjectModalLabel"}
-            "Create a new project"]]
-        [:div {:class "modal-body"} "TODO..."]
-        [:div {:class "modal-footer"}
-          [:button {:type "button" :class "btn btn-default"
-                    :data-dismiss "modal"} "Close"]
-          [:button {:type "button" :class "btn btn-primary"}
-            "Save changes"]]]]])
+(defn ^:private add-project-modal []
+  (let [p-name (r/atom nil)]
+    (fn []
+  [:div
+    [:div {:class "modal fade" :id "addProjModal" :tabIndex "-1" :role "dialog"
+           :aria-labelledby "addProjectModalLabel"}
+      [:div {:class "modal-dialog" :role "document"}
+        [:div {:class "modal-content"}
+          [:div {:class "modal-header"}
+            [:button {:type "button" :class "close"
+                      :data-dismiss "modal" :aria-label "Close"}
+              [:span {:aria-hidden "true"} "x"]]
+            [:h4 {:class "modal-title" :id "addProjectModalLabel"}
+              "Create a new project"]]
+          [:div {:class "modal-body"}
+            [:div {:class "form-horizontal"}
+              [:div {:class "form-group"}
+                [:label {:class "control-label col-sm-3" :for "nameInput"}
+                  "Project name"]
+                [:div {:class "col-sm-9"}
+                  [:input {:type "text" :class "form-control"
+                           :on-change #(reset! p-name (-> % .-target .-value))
+                           :value @p-name :id "nameInput"
+                           :placeholder "Project name"}]]]]]
+          [:div {:class "modal-footer"}
+            [:button {:type "button" :class "btn btn-default"
+                      :data-dismiss "modal"} "Close"]
+            [:button {:type "button" :class "btn btn-primary"
+                      :data-dismiss "modal"
+                      :on-click #(projects/create-project @p-name)}
+              "Save changes"]]]]]
+    [:button {:type "button" :class "btn btn-primary"
+              :data-toggle "modal" :data-target "#addProjModal"}
+      "Create new Project"]])))
 
 (defn component []
-  (let [add-modal "addProjectModal"
-        refreshing (r/atom false)]
+  (let [refreshing (r/atom false)]
     (fn []
     [:div {:class "container"} [:h1 {:class "page-header"} "Projects Page"]
-      (add-project-modal add-modal)
       [:div {:class "btn-toolbar" :role "toolbar"}
-        [:button {:type "button" :class "btn btn-primary"
-                  :data-toggle "modal" :data-target (str "#" add-modal)}
-          "Create new Project"]
+        [add-project-modal]
         [:button {:type "button"
                   :class (str "btn btn-default" (when @refreshing " disabled"))
                   :on-click #(projects/get-projects refreshing)} "Refresh"]]
@@ -39,9 +52,11 @@
         [:div {:class "panel panel-default"}
           [:div {:class "panel-heading"} "Projects list"]
           [:table {:class "table"}
-            [:thead [:tr [:th "#"] [:th "Name"] [:th "Value"]]]
             [:tbody
               (for [p (get-in @app-state [:projects])] ^{:key p}
-                [:tr [:th {:scope "row"} ">"]
-                  [:td (get p :user-name)]
-                  [:td (str p)]])]]])])))
+                  [:tr
+                    [:td [:span {:class "glyphicon glyphicon-bookmark"
+                                 :aria-hidden "true"}]]
+                    [:td [:a {:href (str "#/projects/" (get p :user-name))}
+                          (get p :user-name)]]
+                    [:td (str p)]])]]])])))
