@@ -42,5 +42,6 @@
               (if @loading? "Connecting..." "Login")]]]]])))
 
 (defn component []
-  [:div [:h1 "Login Page"]
+  [:div {:class "container"}
+    [:h1 {:class "page-header"} "Login Page"]
     [login-form]])

@@ -5,27 +5,27 @@
 (defn component []
   (let [active? (fn [p] (when (= p (:page @app-state)) {:class "active"}))]
     [:nav {:class "navbar navbar-default navbar-fixed-top"}
-      [:div {:class "container-fluid"}
+      [:div {:class "container"}
+        [:div {:class "navbar-header"}
+          [:button {:type "button" :class "navbar-toggle collapsed"
+                    :data-toggle "collapse" :aria-expanded "false"
+                    :data-target "#bs-example-navbar-collapse-1"}
+            [:span {:class "icon-bar"}]
+            [:span {:class "icon-bar"}]
+            [:span {:class "icon-bar"}]]
+          [:a {:class "navbar-brand" :href "#/"} "Home"]]
 
-      [:div {:class "navbar-header"}
-        [:button {:type "button" :class "navbar-toggle collapsed"
-                  :data-toggle "collapse" :aria-expanded "false"
-                  :data-target "#bs-example-navbar-collapse-1"}
-          [:span {:class "icon-bar"}]
-          [:span {:class "icon-bar"}]
-          [:span {:class "icon-bar"}]]
-        [:a {:class "navbar-brand" :href "#/"} "Home"]]
+          [:div {:class "collapse navbar-collapse" :id "bs-example-navbar-collapse-1"}
 
-        [:div {:class "collapse navbar-collapse" :id "bs-example-navbar-collapse-1"}
+            [:ul {:class "nav navbar-nav"}
+              (when (:connected @app-state)
+                [:li (active? :projects) [:a {:href "#/projects"} "Projects"]])
+              [:li (active? :about) [:a {:href "#/about"} "About"]]]
 
-          [:ul {:class "nav navbar-nav"}
-            [:li (active? :home) [:a {:href "#/"} "Home"]]
-            (when (:connected @app-state)
-            [:li (active? :projects) [:a {:href "#/projects"} "Projects"]])
-            [:li (active? :about) [:a {:href "#/about"} "About"]]]
-
-          [:ul {:class "nav navbar-nav navbar-right"}
-            (if (:connected @app-state)
-              [:li [:a {:href "#/" :on-click auth/logout} "Logout"]]
-              [:li (active? :login) [:a {:href "#/login"} "Login"]])
-            ]]]]))
+            [:ul {:class "nav navbar-nav navbar-right"}
+              (if (:connected @app-state)
+                [:li [:a {:href "#/" :on-click auth/logout}
+                  "Logout " [:span {:class "glyphicon glyphicon-log-out"}]]]
+                [:li (active? :login) [:a {:href "#/login"}
+                  [:span {:class "glyphicon glyphicon-log-in"}] " Login"]])
+              ]]]]))

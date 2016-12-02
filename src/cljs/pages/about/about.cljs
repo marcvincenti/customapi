@@ -2,6 +2,6 @@
   (:require [app.state :refer [app-state]]))
 
 (defn component []
-  [:div [:h1 "About Page"]
-    [:p "For DEBUG purpose : "
-      (str @app-state)]])
+  [:div {:class "container"}
+    [:h1 {:class "page-header"} "@app-state"]
+    [:p (str @app-state)]])
