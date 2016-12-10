@@ -13,6 +13,7 @@
             [pages.about :as about]
             [pages.home :as home]
             [pages.login :as login]
+            [pages.project-details :as project-details]
             [pages.projects :as projects]))
 
 ;Adding Browser History
@@ -30,6 +31,8 @@
   (defroute "/" [] (swap! app-state assoc :page :home))
   (defroute "/about" [] (swap! app-state assoc :page :about))
   (defroute "/login" [] (swap! app-state assoc :page :login))
+  (defroute "/project/:name" [name] (swap! app-state assoc
+                                      :page :project-details :project name))
   (defroute "/projects" [] (swap! app-state assoc :page :projects))
   (hook-browser-navigation!))
 
@@ -38,7 +41,8 @@
 (defmethod current-page :home [] [home/component])
 (defmethod current-page :about [] [about/component])
 (defmethod current-page :login  [] [login/component])
-(defmethod current-page :projects  [] [projects/component])
+(defmethod current-page :project-details [] [project-details/component])
+(defmethod current-page :projects [] [projects/component])
 (defmethod current-page :default  [] [:div])
 
 ;Root function to run cljs app

@@ -1,5 +1,5 @@
 (ns clojure-rest.routes
-  (:require [compojure.core :refer [GET POST defroutes context]]
+  (:require [compojure.core :refer [GET POST DELETE defroutes context]]
             [compojure.route :refer [not-found resources]]
             [ring.util.response :refer [resource-response]]
             [aws.core :as aws]
@@ -10,7 +10,8 @@
 
 (defroutes ^:private projects
   (GET "/" {params :params} (aws/get-projects params))
-  (POST  "/" {params :params} (aws/create-project params)))
+  (POST  "/" {params :params} (aws/create-project params))
+  (DELETE  "/" {params :params} (aws/delete-project params)))
 
 (defroutes ^:private api
   (POST "/login" {params :params} (aws/get-projects params))

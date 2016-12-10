@@ -2,8 +2,8 @@
   (:require [ring.util.response :refer [response status]]
             [amazonica.core :refer [ex->map]]
             [amazonica.aws.identitymanagement :as iam
-              :only [get-group list-users create-user]]))
-              
+              :only [get-group list-users create-user delete-user]]))
+
 (def aws-path "/serverless/")
 
 (defn list-regions
@@ -33,5 +33,15 @@
   (let [creds {:access-key access-key :secret-key secret-key}]
   (try
     (iam/create-user creds {:user-name name :path aws-path})
+  (catch Exception e (let [err (ex->map e)]
+    (status (response (:message err)) (:status-code err)))))))
+
+(defn delete-project
+  "Delete old project"
+  [{:keys [access-key secret-key name]}]
+  (let [creds {:access-key access-key :secret-key secret-key}]
+  (try
+    (iam/delete-user creds {:user-name name})
+    {:success (str "Project " name " deleted.")}
   (catch Exception e (let [err (ex->map e)]
     (status (response (:message err)) (:status-code err)))))))

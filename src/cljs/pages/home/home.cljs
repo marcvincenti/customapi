@@ -5,10 +5,11 @@
     [:div {:class "jumbotron"}
       [:div {:class "container"}
         [:h1 "Hello, world!"]
-        [:p "This is a template for a simple marketing or informational
-          website. It includes a large callout called a jumbotron and three
-          supporting pieces of content. Use it as a starting point to create
-           something more unique."]
+        [:p "This project aim to create back-end services easily in the cloud.
+          You will be able to deploy your applications as independent functions,
+          that respond to events and scale automatically.
+          You will be charged only when they run.
+          And later, we aim to provide a market-place for cloud services."]
         [:p
           [:a {:class "btn btn-primary btn-lg" :href "#" :role "button"}
             "Get started »"]]]]

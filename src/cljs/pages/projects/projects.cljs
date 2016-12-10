@@ -55,8 +55,11 @@
             [:tbody
               (for [p (get-in @app-state [:projects])] ^{:key p}
                   [:tr
-                    [:td [:span {:class "glyphicon glyphicon-bookmark"
-                                 :aria-hidden "true"}]]
-                    [:td [:a {:href (str "#/projects/" (get p :user-name))}
+                    [:td [:button {:type "button" :class "btn btn-default"
+                                   :aria-label "Remove"
+                                   :on-click #(projects/delete-project p)}
+                            [:span {:class "glyphicon glyphicon-remove"
+                                    :aria-hidden "true"}]]]
+                    [:td [:a {:href (str "#/project/" (get p :user-name))}
                           (get p :user-name)]]
                     [:td (str p)]])]]])])))
