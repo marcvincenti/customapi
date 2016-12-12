@@ -1,4 +1,6 @@
-# Whatever name it has
+# Serverless
+This project aim to provide a quick and easy way to build services like Firebase, but driven with data (not rules) and serverless (powered by AWS lambda).
+
 You can run it with :
 ```
 lein clean
@@ -6,22 +8,24 @@ lein cljsbuild [auto|once] [dev|prod]
 lein ring server-headless
 ```
 
-## TODOs
-+ Projects page
-+ Auth guards & improving routing
-+ Objects page (to update dynamoDB tables)
-+ DynamoDB tables
-+ S3
-+ REST-handler (lambda)
-+ Cognito
-+ Use verifications (i.e. finish collate everything)
-+ User functions (wrappers, routines & routes)
+## What is working now ?
+**Nothing** :)  
+There is only a back-end and a front-end.   
+You can only create/delete projects (*i.e.* users in IAM).
+There is also a lot of dead code in the back-end. It's the result of a lot of change in this project which is first a playground project to learn new technos. Some will be probably re-used later, that's why i haven't deleted yet.
 
-## Configuration
-Use environment variables :
-+ AWS_ACCESS_KEY : your amazon access key
-+ AWS_SECRET_ACCESS_KEY : your amazon secret key
-+ AWS_DEFAULT_REGION : the region for dynamodb tables (_ex:_ eu-west-1)
+## Security
+You have to provide your IAM credentials with an access granteed to IdentityManager.  
+They aren't stocked on the web but in your session and in a cookie if you set _remember be_ to true while login.  
+This isn't safe at all, because we also provide this credentials each time we have to perform a request to the back-end. But this is for test purposes. This won't be changed until this repo/projec will be publicly accessible.
+
+
+## TODOs
++ Auth guards
++ Authentication -> IAM ? Cognito ?
++ Database -> DynamoDB
++ Stocrage -> S3
++ Function -> Lambda
 
 ## Requirements
 
