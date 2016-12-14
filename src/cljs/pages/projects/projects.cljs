@@ -33,7 +33,7 @@
             [:button {:type "button" :class "btn btn-primary"
                       :data-dismiss "modal"
                       :on-click #(projects/create-project @p-name)}
-              "Save changes"]]]]]
+              "Create"]]]]]
     [:button {:type "button" :class "btn btn-primary"
               :data-toggle "modal" :data-target "#addProjModal"}
       "Create new Project"]])))
@@ -48,7 +48,7 @@
                   :class (str "btn btn-default" (when @refreshing " disabled"))
                   :on-click #(projects/get-projects refreshing)} "Refresh"]]
       [:hr]
-      (when (get-in @app-state [:projects])
+      (when (not= (count (get-in @app-state [:projects])) 0)
         [:div {:class "panel panel-default"}
           [:div {:class "panel-heading"} "Projects list"]
           [:table {:class "table"}
@@ -60,6 +60,6 @@
                                    :on-click #(projects/delete-project p)}
                             [:span {:class "glyphicon glyphicon-remove"
                                     :aria-hidden "true"}]]]
-                    [:td [:a {:href (str "#/project/" (get p :user-name))}
-                          (get p :user-name)]]
+                    [:td [:a {:href (str "#/project/" (get p :name))}
+                          (get p :name)]]
                     [:td (str p)]])]]])])))

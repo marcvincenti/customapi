@@ -31,7 +31,7 @@
   [p]
   (go (let [response (<! (http/delete "/api/projects"
                       {:query-params (get @app-state :creds)
-                       :form-params {:name (:user-name p)}}))]
+                       :form-params (select-keys p [:id])}))]
     (if (:success response)
       (.log js/console (str "Success : " (get response :body)))
       (.log js/console (str "Error : " (get response :body)))))))

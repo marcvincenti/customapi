@@ -1,10 +1,8 @@
-(ns aws.core
+(ns aws.apis
   (:require [ring.util.response :refer [response status]]
             [amazonica.core :refer [ex->map]]
-            [amazonica.aws.identitymanagement :as iam
-              :only [get-group list-users create-user delete-user]]))
-
-(def aws-path "/serverless/")
+            [amazonica.aws.apigateway :as api
+              :only [create-rest-api delete-rest-api get-rest-apis]]))
 
 (defn list-regions
   "Return the list of available regions in aws"
@@ -18,30 +16,30 @@
             {:name "EU (Ireland)" :value	"eu-west-1"}]}))
 
 (defn get-projects
-  "Check provided data"
+  "Get all Rest apis"
   [cred]
-  (let [group "myawesomeapi"]
-    (try
-      (response {:projects (map #(update-in % [:create-date] str)
-          (get (iam/list-users cred {:path-prefix aws-path}) :users))})
-      (catch Exception e (let [err (ex->map e)]
-        (status (response (:message err)) (:status-code err)))))))
+  (try
+    (response {:projects (map #(update-in % [:created-date] str)
+      (get (api/get-rest-apis cred {:region "eu-west-1"}) :items))})
+    (catch Exception e (let [err (ex->map e)]
+      (status (response (:message err)) (:status-code err))))))
 
 (defn create-project
-  "Add a new project"
-  [{:keys [access-key secret-key name]}]
+  "Add a new Rest api"
+  [{:keys [access-key secret-key name description version]}]
   (let [creds {:access-key access-key :secret-key secret-key}]
   (try
-    (iam/create-user creds {:user-name name :path aws-path})
+    (api/create-rest-api creds
+      {:name name :description "My api description" :version "1.0.0"})
   (catch Exception e (let [err (ex->map e)]
     (status (response (:message err)) (:status-code err)))))))
 
 (defn delete-project
-  "Delete old project"
-  [{:keys [access-key secret-key name]}]
+  "Delete old Rest api"
+  [{:keys [access-key secret-key id]}]
   (let [creds {:access-key access-key :secret-key secret-key}]
   (try
-    (iam/delete-user creds {:user-name name})
-    {:success (str "Project " name " deleted.")}
+    (api/delete-rest-api creds {:rest-api-id id})
+    {:success (str "Project " id " deleted.")}
   (catch Exception e (let [err (ex->map e)]
     (status (response (:message err)) (:status-code err)))))))
