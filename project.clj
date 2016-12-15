@@ -12,7 +12,7 @@
                  [cljs-http "0.1.42"]     ;for ajax calls
                  [secretary "1.2.3"]      ;router for cljs
                  [ring/ring-json "0.4.0"] ;ring server
-                 [amazonica "0.3.67"]]    ;aws java sdk clj wrapper
+                 [amazonica "0.3.69"]]    ;aws java sdk clj wrapper
   :plugins [[lein-ring "0.9.7"]
             [lein-cljsbuild "1.1.4"]]
   :ring {:init clojure-rest.init/init!

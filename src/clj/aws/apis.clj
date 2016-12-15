@@ -9,18 +9,18 @@
   []
   (response
     {:data [{:name "US East (N. Virginia)" :value "us-east-1"}
-            {:name "US West (Oregon)" :value	"us-west-2"}
-            {:name "Asia Pacific (Seoul)" :value	"ap-northeast-2"}
-            {:name "Asia Pacific (Tokyo)" :value	"ap-northeast-1"}
-            {:name "EU (Frankfurt)" :value	"eu-central-1"}
-            {:name "EU (Ireland)" :value	"eu-west-1"}]}))
+            {:name "US West (Oregon)" :value "us-west-2"}
+            {:name "Asia Pacific (Seoul)" :value "ap-northeast-2"}
+            {:name "Asia Pacific (Tokyo)" :value "ap-northeast-1"}
+            {:name "EU (Frankfurt)" :value "eu-central-1"}
+            {:name "EU (Ireland)" :value "eu-west-1"}]}))
 
 (defn get-projects
   "Get all Rest apis"
-  [cred]
+  [creds]
   (try
     (response {:projects (map #(update-in % [:created-date] str)
-      (get (api/get-rest-apis cred {:region "eu-west-1"}) :items))})
+      (get (api/get-rest-apis creds {:l ""}) :items))})
     (catch Exception e (let [err (ex->map e)]
       (status (response (:message err)) (:status-code err))))))
 
@@ -29,8 +29,8 @@
   [{:keys [access-key secret-key name description version]}]
   (let [creds {:access-key access-key :secret-key secret-key}]
   (try
-    (api/create-rest-api creds
-      {:name name :description "My api description" :version "1.0.0"})
+    (api/create-rest-api creds (into {:name name}
+      (when-not (empty? description) {:description description})))
   (catch Exception e (let [err (ex->map e)]
     (status (response (:message err)) (:status-code err)))))))
 
