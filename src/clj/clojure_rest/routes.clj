@@ -3,6 +3,7 @@
             [compojure.route :refer [not-found resources]]
             [ring.util.response :refer [resource-response]]
             [aws.apis :as apis]
+            [aws.utils :as utils]
             [clojure-rest.wrappers :as wps]))
 
 (defn ^:private four-oh-four-page []
@@ -15,7 +16,7 @@
 
 (defroutes ^:private api
   (POST "/login" {params :params} (apis/get-projects params))
-  (GET  "/regions" [] (apis/list-regions))
+  (GET  "/regions" [] (utils/list-regions))
   (context "/projects" [] projects))
 
 (defroutes app

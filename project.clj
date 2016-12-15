@@ -7,12 +7,12 @@
   :source-paths ["src/clj"]
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.8.51"]
-                 [compojure "1.5.1"]      ;ring wrapper
-                 [reagent "0.6.0"]        ;react.js
-                 [cljs-http "0.1.42"]     ;for ajax calls
-                 [secretary "1.2.3"]      ;router for cljs
-                 [ring/ring-json "0.4.0"] ;ring server
-                 [amazonica "0.3.69"]]    ;aws java sdk clj wrapper
+                 [compojure "1.5.1"]            ;ring wrapper
+                 [reagent "0.6.0"]              ;react.js
+                 [cljs-http "0.1.42"]           ;for ajax calls
+                 [secretary "1.2.3"]            ;router for cljs
+                 [ring/ring-json "0.5.0-beta1"] ;ring server
+                 [amazonica "0.3.79"]]          ;aws java sdk clj wrapper
   :plugins [[lein-ring "0.9.7"]
             [lein-cljsbuild "1.1.4"]]
   :ring {:init clojure-rest.init/init!
@@ -29,6 +29,4 @@
                                    :output-to       "resources/public/js/app.js"
                                    :optimizations   :advanced
                                    :closure-defines {goog.DEBUG false}
-                                   :pretty-print    false}}]}
-  :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                                 [ring/ring-mock "0.3.0"]]}})
+                                   :pretty-print    false}}]})
