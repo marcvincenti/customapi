@@ -50,6 +50,10 @@ You have to provide some IAM credentials with the following strategy : AmazonAPI
 They aren't stocked on the web but in your session and in a cookie if you set _remember be_ to true while login.  
 This isn't safe at all, because we also provide this credentials each time we have to perform a request to the back-end. But this is for test purposes. This won't be changed until this repo/project will be publicly accessible or in an open beta. Feel free to propose any better solution.
 
+## Basic functions
+The first goal is to let user user build serverless api like this :
+![Serverless schema on AWS] (serverless-app.png)
+
 ## TODO(s)
 + Auth guards
 + Authentication -> IAM ? Cognito ?
