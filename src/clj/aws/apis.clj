@@ -10,7 +10,7 @@
   (let [creds {:access-key access-key :secret-key secret-key}]
   (try
     (response {:projects (map #(update-in % [:created-date] str)
-      (get (api/get-rest-apis creds {:l ""}) :items))})
+      (get (api/get-rest-apis creds {:limit 25}) :items))})
     (catch Exception e (let [err (ex->map e)]
       (status (response (:message err)) (:status-code err)))))))
 

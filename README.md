@@ -1,5 +1,5 @@
 # Serverless & microservices
-This project aim to provide a quick and easy way to build services like Firebase, but driven with data (not rules) and serverless (powered by AWS lambda). The next step will be to share microservices between platforms.
+This project aim to provide a quick and easy way to build services like Firebase, but value oriented (inspired by [this talk](https://www.youtube.com/watch?v=-6BsiVyC1kM)) and serverless (powered by AWS). The next step will be sharing public data between different platforms.
 
 You can run it with :
 ```
